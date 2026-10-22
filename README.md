@@ -386,15 +386,18 @@ AEMEATH_API_KEY=sk-...
 |---|---|
 | `<项目>/.aemeath/skills/` | 项目专属 |
 | `<项目>/.claude/skills/` | 项目专属（兼容 Claude 约定） |
-| `<项目>/skills/` | 项目专属 |
-| **`~/.aemeath/skills/`** | **全局（爱弥斯人设在这里）** |
+| **`<项目>/skills/`** | **项目专属 —— 爱弥斯人设就在这里（本仓库的 `skills/aemeath/`）** |
+| `~/.aemeath/skills/` | 全局（其他技能可放这里） |
 | `~/.claude/skills/` | 全局（兼容） |
 | `~/.config/agent/skills/` | 全局（兼容） |
 
 ### 爱弥斯人设的结构
 
+人设随仓库一起版本管理，**仓库里的这份是唯一来源**（本机不再另存一份，
+避免两份改动不同步）。
+
 ```
-~/.aemeath/skills/aemeath/
+skills/aemeath/
 ├── SKILL.md          # 入口 + 按需查阅表（frontmatter: name/description）
 ├── profile.md        # 身份、外观、属性、世界观
 ├── personality.md    # 性格与价值观
@@ -403,6 +406,8 @@ AEMEATH_API_KEY=sk-...
 ├── relations.md      # 人物关系
 └── conflicts.md      # 设定冲突与更正记录
 ```
+
+它不走「可选技能」那套语义：`aemeath` 决定她是谁，其余技能才是给她加能力。
 
 只有 `SKILL.md` 的 `name` + `description` 会进 system prompt；
 正文在人设被用到时才通过 `use_skill` 加载，节省上下文。

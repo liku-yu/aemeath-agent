@@ -5,9 +5,10 @@ import { dirname, join } from "node:path";
 /**
  * Locate the `aemeath` skill directory the same way the app does at runtime.
  *
- * The persona lives as a user-level resource so it is available in every
- * working directory. A project-local copy (if present) still wins, which is
- * what the app's skill resolution does too.
+ * The persona is versioned with the repository (`skills/aemeath/`) and that copy
+ * is the only source of truth — no user-level duplicate is kept, so the two
+ * cannot drift. The user-level lookup below stays as a fallback for machines
+ * running a build without the repo checkout.
  */
 export function findAemeathSkillDir(startDir: string): string | null {
   // 1) Project-local, walking up from the test file.
