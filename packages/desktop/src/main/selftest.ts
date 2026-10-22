@@ -516,7 +516,12 @@ w.webContents.once("did-finish-load", async () => {
     expect(escapeDom.afterSwitch.detailName.includes("OpenAI"), "详情应显示新选中的供应商");
     expect(escapeDom.logoFromDeepseek === "\u{1F40B}", "已知域名应复用该厂商图标");
     expect(typeof escapeDom.logoFromUrl === "string" && escapeDom.logoFromUrl.length > 0, "自定义地址应能推导出图标");
-    expect(/^sk-t•{8}wxyz$/.test(keyDom.after.value), `保存后应显示脱敏预览，实际 ${keyDom.after.value}`);
+    // Compare against the runtime-built key, not a hard-coded one.
+    const expectedMask = UI_KEY.slice(0, 4) + "•".repeat(8) + UI_KEY.slice(-4);
+    expect(
+      keyDom.after.value === expectedMask,
+      `保存后应显示脱敏预览，期望 ${expectedMask}，实际 ${keyDom.after.value}`,
+    );
     expect(keyDom.preview === keyDom.after.value, "掩码应与保存后的输入框一致");
     expect(keyDom.after.readOnly === true, "脱敏状态应为只读");
     expect(keyDom.focused.value === keyDom.preview, "点击输入框不应清空脱敏预览");

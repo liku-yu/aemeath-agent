@@ -18,11 +18,11 @@
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p packages/desktop/tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "electron": "^33.2.0",
-    "esbuild": "^0.24.2",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "@types/node": "^22.20.5",
+    "electron": "^45.0.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20.11"

@@ -1,5 +1,6 @@
 {
   "name": "@aemeath/desktop",
+  "productName": "Aemeath",
   "version": "0.1.0",
   "description": "Aemeath Agent desktop app (Electron) — Windows-first, Linux-ready",
   "private": true,
@@ -15,17 +16,37 @@
     "@aemeath/core": "0.1.0"
   },
   "devDependencies": {
-    "electron": "^33.2.0",
-    "electron-builder": "^25.1.8",
-    "esbuild": "^0.24.2"
+    "electron": "^45.0.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2"
   },
   "build": {
     "appId": "dev.aemeath.agent",
     "productName": "Aemeath",
-    "files": ["dist/**/*", "package.json"],
-    "directories": { "output": "release" },
-    "win": { "target": ["nsis", "portable"] },
-    "linux": { "target": ["AppImage", "deb"], "category": "Development" },
-    "mac": { "target": ["dmg"] }
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    }
   }
 }

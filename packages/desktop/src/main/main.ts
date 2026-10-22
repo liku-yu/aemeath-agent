@@ -39,6 +39,20 @@ import {
 } from "@aemeath/core";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+/*
+ * Name the app before anything touches userData.
+ *
+ * Electron derives the userData directory from `app.getName()`, which reads the
+ * top-level `productName` and falls back to `name`. Our package name is the npm
+ * scope `@aemeath/desktop`, and the slash in it became a *path separator*:
+ * caches were written to `%APPDATA%\@aemeath/desktop`, which failed with
+ * "access denied" and took the GPU and network services down with it — the app
+ * exited with code 3 before a window ever appeared.
+ *
+ * Setting the name explicitly keeps that independent of packaging metadata.
+ */
+app.setName("Aemeath");
+
 const APP_START = Date.now();
 
 /* --------------------------- host error handling -------------------------- */
