@@ -1,0 +1,22 @@
+{
+  "name": "@aemeath/core",
+  "version": "0.1.0",
+  "description": "Aemeath Agent core — ReAct loop, tools, memory, MCP (platform agnostic)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "aemeath": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test src/test/*.test.ts",
+    "dev": "node --import tsx src/cli.ts"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}

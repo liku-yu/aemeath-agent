@@ -1,0 +1,21 @@
+{
+  "$schema": "https://example.com/aemeath-config.schema.json",
+  "model": "deepseek-chat",
+  "baseUrl": "https://api.deepseek.com",
+  "apiKey": "",
+  "maxTokens": 8192,
+  "temperature": 0.3,
+  "maxSteps": 40,
+  "contextBudget": 120000,
+  "permissions": {
+    "writeFile": "ask",
+    "runCommand": "ask",
+    "denyCommands": ["rm -rf /", "mkfs", "dd if=", "shutdown"],
+    "allowCommands": ["ls", "cat", "git status", "git diff"]
+  },
+  "persona": {
+    "enabled": true,
+    "file": ""
+  },
+  "mcpServers": {}
+}

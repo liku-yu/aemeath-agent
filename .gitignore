@@ -1,0 +1,32 @@
+# ---- 依赖 ----
+# 注意：写成 `node_modules/` 在 git 里同样能匹配任意层级，但为了不依赖读者的记忆，
+# 下面同时显式写出嵌套路径，避免 packages/*/node_modules 被误提交。
+node_modules/
+**/node_modules/
+
+# ---- 构建产物 ----
+dist/
+**/dist/
+release/
+*.tsbuildinfo
+
+# ---- 本地/敏感数据（绝不提交） ----
+.env
+**/.env
+.aemeath/
+*.log
+config.local.json
+credentials.json
+
+# ---- 系统与编辑器 ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# ---- 截图与临时文件 ----
+shot*.png
+ui-shot.png
+*.tmp
+.fix.py
+probe*.tmp

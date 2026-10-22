@@ -1,0 +1,31 @@
+{
+  "name": "@aemeath/desktop",
+  "version": "0.1.0",
+  "description": "Aemeath Agent desktop app (Electron) — Windows-first, Linux-ready",
+  "private": true,
+  "type": "module",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/launch.mjs",
+    "dev": "node scripts/launch.mjs --dev",
+    "dist": "node scripts/build.mjs && electron-builder"
+  },
+  "dependencies": {
+    "@aemeath/core": "0.1.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.2"
+  },
+  "build": {
+    "appId": "dev.aemeath.agent",
+    "productName": "Aemeath",
+    "files": ["dist/**/*", "package.json"],
+    "directories": { "output": "release" },
+    "win": { "target": ["nsis", "portable"] },
+    "linux": { "target": ["AppImage", "deb"], "category": "Development" },
+    "mac": { "target": ["dmg"] }
+  }
+}

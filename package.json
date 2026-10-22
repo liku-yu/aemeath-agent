@@ -1,0 +1,30 @@
+{
+  "name": "aemeath-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aemeath Agent — a TypeScript desktop AI agent (Windows-first, Linux-ready)",
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/desktop"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @aemeath/core && npm run build --workspace @aemeath/desktop",
+    "build:core": "npm run build --workspace @aemeath/core",
+    "test": "npm run test --workspace @aemeath/core",
+    "cli": "node packages/core/dist/cli.js",
+    "desktop": "node packages/desktop/scripts/launch.mjs",
+    "desktop:build": "npm run build --workspace @aemeath/desktop",
+    "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p packages/desktop/tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "electron": "^33.2.0",
+    "esbuild": "^0.24.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}

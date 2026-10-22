@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <!--
+      Every capability the UI needs goes through preload IPC, so the renderer
+      itself needs no network at all: `connect-src 'none'` closes the standard
+      exfiltration channel if anything ever does manage to inject markup.
+      style-src needs 'unsafe-inline' because the UI sets inline style attributes.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'" />
+    <title>爱弥斯 · Aemeath Agent</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Sidebar -->
+      <aside id="sidebar">
+        <div class="side-top">
+          <div class="brand">
+            <!-- Animated pixel Aemeath (mood driven) -->
+            <div class="avatar" id="avatar" data-mood="idle" title="爱弥斯">
+              <canvas id="avatar-canvas"></canvas>
+              <span class="mood-dot" id="mood-dot"></span>
+            </div>
+            <div class="brand-text">
+              <div class="brand-name">爱弥斯</div>
+              <div class="brand-sub" id="mood-label">待机中</div>
+            </div>
+          </div>
+
+          <div class="speech" id="speech">漂泊者，今天想做点什么？✨</div>
+
+          <div class="quick-actions">
+            <button class="btn primary" id="btn-new">＋ 新会话</button>
+          </div>
+
+          <div class="info-row">
+            <span class="info-key">模型</span>
+            <span class="info-val" id="model-pill">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">余额</span>
+            <span class="info-val coin" id="side-balance">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">桌宠</span>
+            <label class="switch">
+              <input type="checkbox" id="pet-toggle" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="side-scroll">
+          <div class="section-title">会话</div>
+          <div id="sessions" class="sessions"></div>
+        </div>
+
+        <div class="side-bottom">
+          <div class="status" id="status"></div>
+          <button class="btn ghost" id="btn-settings">⚙ 设置</button>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main id="main">
+        <header id="topbar">
+          <div id="cwd" class="cwd"></div>
+          <div class="topbar-right">
+            <!-- Provider + model switcher: pick which provider's which model -->
+            <button class="pill picker" id="btn-picker" title="切换供应商 / 模型">
+              <span id="pk-provider" class="pk-provider">—</span>
+              <span class="pk-sep">/</span>
+              <span id="pk-model" class="pk-model">—</span>
+              <span class="pk-caret">▾</span>
+            </button>
+            <span class="pill coin" id="topbar-balance" title="余额 / 用量">—</span>
+            <!-- Context usage. Fed by the core's per-step `usage` event, which the
+                 renderer used to discard, so the first sign of a full context was
+                 the compaction notice itself. -->
+            <span class="pill ctx-meter" id="ctx-meter" title="上下文占用">
+              <span class="ctx-track"><i id="ctx-fill"></i></span>
+            </span>
+            <button class="btn ghost small toggle" id="btn-plan" title="计划模式：只读调研，不改动文件">📋 计划</button>
+            <button class="btn ghost small" id="btn-undo" title="撤销最近一次文件改动">↶ 撤销</button>
+            <button class="btn ghost small" id="btn-stop" title="中止当前运行">■ 停止</button>
+          </div>
+        </header>
+
+        <div id="stage-area">
+          <div id="messages" class="messages">
+            <!-- welcome card injected by JS -->
+          </div>
+
+          <!-- Embedded desktop pet (draggable within the window) -->
+          <div id="pet-dock" class="pet-dock" data-mood="idle">
+            <div class="pet-badges">
+              <span class="pet-badge" id="pet-model" title="当前模型">—</span>
+              <span class="pet-badge coin" id="pet-balance" title="账户余额">—</span>
+            </div>
+            <div class="pet-bubble hidden" id="pet-bubble"></div>
+            <canvas id="pet-canvas"></canvas>
+            <div class="pet-actions">
+              <button class="pet-btn" id="pet-refresh" title="刷新余额">⟳</button>
+              <button class="pet-btn" id="pet-hide" title="隐藏桌宠">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <footer id="composer">
+          <textarea id="input" rows="1" placeholder="交给爱弥斯一件事…（Enter 发送，Shift+Enter 换行）"></textarea>
+          <button class="btn primary" id="btn-send">发送 ✨</button>
+        </footer>
+      </main>
+    </div>
+
+    <!-- Provider / model picker (opens from the topbar) -->
+    <div id="picker-overlay" class="picker-overlay hidden">
+      <div class="picker-panel" id="picker-panel">
+        <div class="picker-head">
+          <input id="picker-search" type="text" placeholder="搜索供应商或模型…" autocomplete="off" />
+        </div>
+        <div class="picker-cols">
+          <div class="picker-col">
+            <div class="picker-col-title">供应商</div>
+            <div class="picker-providers" id="picker-providers"></div>
+          </div>
+          <div class="picker-col">
+            <div class="picker-col-title">模型</div>
+            <div class="picker-models" id="picker-models"></div>
+          </div>
+        </div>
+        <div class="picker-foot">
+          <span class="hint" id="picker-hint">↑↓ 选择 · Enter 应用 · Esc 关闭</span>
+          <button class="btn ghost small" id="picker-manage">去设置里管理…</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm dialog (replaces the native confirm()) -->
+    <div id="confirm-overlay" class="overlay hidden">
+      <div class="modal confirm">
+        <div class="confirm-head">
+          <div class="mini-avatar" id="confirm-avatar"></div>
+          <div class="confirm-title" id="confirm-title">确认操作</div>
+        </div>
+        <div class="confirm-body" id="confirm-body"></div>
+        <div class="confirm-note hidden" id="confirm-note"></div>
+        <!-- Optional single-line input, so "name it" does not need its own dialog. -->
+        <label class="confirm-input hidden" id="confirm-input-wrap">
+          <span id="confirm-input-label"></span>
+          <input id="confirm-input" autocomplete="off" spellcheck="false" />
+        </label>
+        <div class="modal-actions">
+          <button class="btn" id="confirm-cancel">取消</button>
+          <button class="btn danger" id="confirm-ok">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Permission modal -->
+    <div id="perm-overlay" class="overlay hidden">
+      <div class="modal">
+        <div class="modal-head">
+          <div class="mini-avatar" id="perm-avatar"></div>
+          <div class="modal-title" id="perm-title">需要授权</div>
+        </div>
+        <pre class="modal-detail" id="perm-detail"></pre>
+        <div class="modal-actions">
+          <button class="btn danger" id="perm-deny">拒绝</button>
+          <button class="btn" id="perm-once">本次允许</button>
+          <button class="btn" id="perm-class" title="记住这一类，之后同类的操作不再询问">允许这一类</button>
+          <button class="btn primary" id="perm-always">永远允许</button>
+        </div>
+        <div class="hint" id="perm-class-hint"></div>
+      </div>
+    </div>
+
+    <!-- Settings modal -->
+    <div id="settings-overlay" class="overlay hidden">
+      <div class="modal settings">
+        <div class="settings-head">
+          <div class="modal-title">设置</div>
+          <div class="settings-tabs">
+            <button class="tab active" data-tab="model">模型与接口</button>
+            <button class="tab" data-tab="agent">Agent</button>
+            <button class="tab" data-tab="ui">外观</button>
+            <button class="tab" data-tab="data">数据</button>
+            <button class="tab" data-tab="diag">诊断</button>
+          </div>
+        </div>
+
+        <!-- ---------------- Model / API ---------------- -->
+        <section class="settings-body" data-panel="model">
+          <div class="prov-layout">
+            <!-- Left: provider list, grouped into built-in and user-added. -->
+            <aside class="prov-nav">
+              <div class="prov-nav-head">
+                <span>供应商</span>
+                <button class="btn ghost small" id="btn-add-provider" type="button" title="从模板添加供应商">＋</button>
+              </div>
+              <div class="prov-nav-list" id="prov-nav-list"></div>
+              <!-- Hidden state holder: the visible list above writes into it so the
+                   rest of the settings code keeps a single source of truth. -->
+              <select id="cfg-provider" hidden></select>
+            </aside>
+
+            <!-- Right: the selected provider's settings. -->
+            <div class="prov-detail">
+              <div class="prov-title" id="prov-title">
+                <span class="prov-title-logo" id="prov-detail-logo">✨</span>
+                <span class="prov-title-name" id="prov-detail-name">供应商</span>
+                <span class="prov-dot" id="prov-detail-dot" title="状态"></span>
+              </div>
+              <div class="prov-manage" id="provider-manage"></div>
+
+              <!-- Everything below belongs to the *selected* provider. It is
+                   hidden while the create/edit form is open, so the pane never
+                   shows two Base URL fields at once. -->
+              <div id="prov-detail-fields" class="prov-detail-fields">
+
+
+              <label>接口类型（API 模式）
+                <select id="cfg-apiMode">
+                  <option value="chat">Chat Completions（/chat/completions）</option>
+                  <option value="responses">Responses API（/responses）</option>
+                  <option value="messages">Messages API（/v1/messages · Anthropic）</option>
+                </select>
+                <span class="hint" id="mode-hint"></span>
+              </label>
+
+              <label>Base URL
+                <div class="key-row">
+                  <input id="cfg-baseUrl" placeholder="https://api.deepseek.com" autocomplete="off" spellcheck="false" />
+                  <button class="btn ghost small hidden" id="cfg-baseUrl-reset" type="button"
+                    title="把这个供应商的接口地址恢复成默认值">↺ 恢复默认</button>
+                </div>
+                <div class="hint hidden" id="cfg-baseUrl-hint"></div>
+              </label>
+
+              <!-- API key: kept in the encrypted credential store, never in config.json -->
+              <label>API Key
+                <div class="key-row">
+                  <input id="cfg-apiKey" type="password" placeholder="粘贴 Key（不会写入配置文件）" autocomplete="off" spellcheck="false" />
+                  <button class="btn ghost small" id="cfg-key-eye" type="button" title="显示/隐藏">👁</button>
+                  <button class="btn ghost small" id="cfg-key-save" type="button" title="加密保存这个 Key">保存</button>
+                  <button class="btn ghost small hidden" id="cfg-key-replace" type="button"
+                    title="粘贴一个新的 Key 来替换已保存的">✎ 更换</button>
+                  <button class="btn ghost small" id="cfg-key-clear" type="button" title="删除已保存的 Key">清除</button>
+                </div>
+                <div class="hint" id="cfg-key-state"></div>
+                <div class="hint hidden" id="cfg-key-link"></div>
+              </label>
+
+              <div class="section-label">
+                模型
+                <button class="btn small" id="btn-detect-models" type="button"
+                  title="用上面的 Base URL 和 Key 向供应商查询可用模型">⟳ 检测可用模型</button>
+                <button class="btn ghost small" id="btn-add-model" type="button" title="手动添加模型名">＋ 手动</button>
+                <button class="btn ghost small hidden" id="btn-prune-models" type="button"
+                  title="清掉当前 Key 检测不到、又残留在列表里的模型">🧹 只留检测到的</button>
+              </div>
+              <div class="hint" id="model-hint"></div>
+
+              <!--
+                Model list. Each row: click the name to use it, the tiny tick button
+                to probe it. Detection only ADDS candidates here (never overwrites), so
+                a hand-tuned list is never clobbered.
+              -->
+              <div class="model-list" id="model-list"></div>
+              <div class="conn-result hidden" id="conn-result"></div>
+
+              <label>当前模型<input id="cfg-model" placeholder="deepseek-chat" /></label>
+
+              <div class="row2">
+                <label>最大输出 tokens<input id="cfg-maxTokens" type="number" min="256" step="256" /></label>
+                <label>温度<input id="cfg-temperature" type="number" min="0" max="2" step="0.1" /></label>
+              </div>
+
+              <div class="row2">
+                <label>工作目录<input id="cfg-cwd" /></label>
+                <button class="btn" id="cfg-pick" style="align-self:flex-end">选择目录…</button>
+              </div>
+
+              <div class="row2">
+                <button class="btn" id="btn-test-conn" type="button" title="用当前设置发一次极小请求">🔌 测试当前配置</button>
+              </div>
+
+              <div class="balance-box" id="balance-box"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Provider template picker (ZCode-style: pick a template, then fill in the key) -->
+        <div id="tpl-overlay" class="overlay hidden">
+          <div class="modal tpl-modal">
+            <div class="modal-head">
+              <div class="mini-avatar" id="tpl-avatar"></div>
+              <div class="modal-title">添加供应商</div>
+            </div>
+            <span class="hint">选一个模板，会自动填好接口地址和协议；之后只需粘贴 API Key。</span>
+            <div class="tpl-group">内置模板</div>
+            <div class="tpl-grid" id="tpl-grid-builtin"></div>
+            <div class="tpl-group">其他</div>
+            <div class="tpl-grid" id="tpl-grid-custom"></div>
+            <div class="modal-actions">
+              <button class="btn" id="tpl-cancel" type="button">取消</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---------------- Agent ---------------- -->
+        <section class="settings-body hidden" data-panel="agent">
+          <div class="row2">
+            <label>单轮最大步数<input id="cfg-maxSteps" type="number" min="1" max="200" /></label>
+            <label>上下文预算 (tokens)<input id="cfg-contextBudget" type="number" min="8000" step="4000" /></label>
+          </div>
+          <label class="check"><input type="checkbox" id="cfg-persona-enabled" /> 启用爱弥斯人格</label>
+          <label>自定义人格文件（留空用内置）<input id="cfg-persona-file" placeholder="C:\\path\\to\\persona.md" /></label>
+
+          <div class="section-label">权限</div>
+          <div class="row2">
+            <label>写文件<select id="cfg-perm-write">
+              <option value="ask">每次询问</option><option value="allow">自动允许</option><option value="deny">禁止</option>
+            </select></label>
+            <label>执行命令<select id="cfg-perm-exec">
+              <option value="ask">每次询问</option><option value="allow">自动允许</option><option value="deny">禁止</option>
+            </select></label>
+          </div>
+          <button class="btn ghost small" id="cfg-clear-allow">清空"永远允许"记录</button>
+
+          <div class="section-label">已加载的 Skills</div>
+          <div id="skills-list" class="skills-list"></div>
+          <span class="hint">Skills 目录：<code>&lt;项目&gt;/.aemeath/skills</code>、<code>&lt;项目&gt;/skills</code>、<code>~/.claude/skills</code>、<code>~/.aemeath/skills</code>。
+            每个技能是含 <code>SKILL.md</code> 的目录或单个 <code>.md</code>。</span>
+
+          <div class="section-label">MCP Servers</div>
+          <div id="mcp-list" class="skills-list"></div>
+          <span class="hint">在 <code>~/.aemeath/config.json</code> 的 <code>mcpServers</code> 中配置。</span>
+        </section>
+
+        <!-- ---------------- UI ---------------- -->
+        <section class="settings-body hidden" data-panel="ui">
+          <label class="check"><input type="checkbox" id="cfg-pet-enabled" checked /> 显示内嵌桌宠</label>
+          <label class="check"><input type="checkbox" id="cfg-show-thinking" checked /> 显示思考过程（Reasoning）</label>
+          <label class="check"><input type="checkbox" id="cfg-compact-tools" /> 工具调用折叠显示</label>
+          <span class="hint">这些选项保存在本机 localStorage，立即生效。</span>
+        </section>
+
+        <!-- ---------------- Data ---------------- -->
+        <section class="settings-body hidden" data-panel="data">
+          <div class="section-label">会话管理</div>
+          <div id="session-manage" class="session-manage"></div>
+          <div class="row2" style="margin-top:10px">
+            <button class="btn danger" id="btn-delete-all">删除全部会话</button>
+            <button class="btn ghost" id="btn-open-datadir">打开数据目录</button>
+          </div>
+
+          <div class="section-label">配置文件</div>
+          <span class="hint" id="config-path"></span>
+        </section>
+
+        <!-- ---------------- Diagnostics ---------------- -->
+        <section class="settings-body hidden" data-panel="diag">
+          <div class="diag-head">
+            <button class="btn small" id="btn-health" type="button">⟳ 重新检查</button>
+            <span class="hint" id="health-summary"></span>
+          </div>
+          <div id="health-list" class="health-list"></div>
+          <span class="hint">这里只做本地检查，不会发起网络请求。要验证连通性请到「模型与接口」点测试。</span>
+        </section>
+
+        <div class="modal-actions">
+          <span class="save-hint" id="save-hint"></span>
+          <button class="btn" id="settings-close">取消</button>
+          <button class="btn primary" id="settings-save">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="aemeath-pixel.js"></script>
+    <script src="aemeath-sprite.js"></script>
+    <script src="aemeath-pet.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
