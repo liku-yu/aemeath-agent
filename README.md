@@ -473,6 +473,35 @@ skills/aemeath/
 
 ---
 
+## 故障排查：桌面端起不来，但命令行正常
+
+如果 `npm run desktop` 立刻退出（退出码 3、无任何输出），而 `npm run cli` 正常，
+**先查工作目录的完整性标签**：
+
+```powershell
+icacls "C:\Users\<你>\Desktop\agent\aemeath"
+```
+
+如果输出里出现 `Mandatory Label\Low Mandatory Level`，就是它：
+
+- Chromium 的沙箱子进程本身就是**低完整性**，写不进带低 IL 标签的目录
+- Electron 因此在创建缓存时被拒绝访问，GPU / 网络服务跟着崩，启动即退出
+- 命令行版本用纯 Node，不走那套沙箱，所以完全正常 —— 看起来像构建问题，其实不是
+- **沙箱化的 agent 工具（某些 AI agent）会给自己的工作区打上这个标签**，
+  在其中创建的对象都会继承它
+
+修复（不改文件内容，只恢复默认完整性级别）：
+
+```powershell
+icacls "<项目目录>" /remove:d Everyone
+icacls "<项目目录>" /setintegritylevel (OI)(CI)M
+```
+
+`scripts/launch.mjs` 会在拉起 Electron **之前**做这项检查，命中时直接打印上面这段提示，
+不会让你对着一个静默退出的进程猜。
+
+---
+
 ## 测试
 
 ```bash

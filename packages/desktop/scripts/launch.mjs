@@ -10,7 +10,7 @@
  * Spawning Electron from Node avoids the shell entirely and works identically
  * on Windows, Linux and macOS.
  */
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,6 +22,60 @@ const require = createRequire(import.meta.url);
 
 // Steps ahead of Electron's own argv (e.g. `--dev`, `--smoke`).
 const passthrough = process.argv.slice(2);
+
+/**
+ * Fail early, and loudly, when the workspace directory is marked Low Integrity.
+ *
+ * A Low-integrity directory (Windows shows it as
+ * `Mandatory Label\Low Mandatory Level`) cannot be written by Chromium's
+ * sandboxed processes, which are themselves low integrity. Electron then dies
+ * during startup with **exit code 3 and no output at all** — no window, no log,
+ * nothing to search for. The CLI keeps working, because plain Node does not use
+ * that sandbox, so it looks like a build problem when it is not.
+ *
+ * Sandboxed agent workspaces can do this: whatever a Low-IL process creates
+ * inherits its integrity level. This check runs before Electron so the symptom
+ * comes with an explanation and a fix.
+ *
+ * Read-only: it never changes the ACL itself.
+ */
+function lowIntegrityLevel(dir) {
+  if (process.platform !== "win32") return null;
+  try {
+    // `icacls <dir>` prints a SACL line only when an explicit label is set.
+    const out = execFileSync("icacls", [dir], { encoding: "utf8", windowsHide: true });
+    if (!/Low Mandatory Level/i.test(out)) return null;
+    return dir;
+  } catch {
+    // icacls missing or denied: not worth failing the launch over.
+    return null;
+  }
+}
+
+function warnIfLowIntegrity(dir) {
+  const bad = lowIntegrityLevel(dir);
+  if (!bad) return;
+
+  const fix = `icacls "${bad}" /remove:d Everyone`;
+  const fix2 = `icacls "${bad}" /setintegritylevel (OI)(CI)M`;
+  process.stderr.write(
+    [
+      "",
+      "[aemeath] 工作目录带「低完整性」标签，桌面端会启动即退出（退出码 3，无任何输出）。",
+      "          原因：Chromium 的沙箱子进程本身就是低完整性，写不进这个目录。",
+      "          命令行版本不受影响，所以看起来像构建问题，其实不是。",
+      "",
+      `          目录：${bad}`,
+      "          修复（在 PowerShell 里执行，不影响文件内容）：",
+      `            ${fix}`,
+      `            ${fix2}`,
+      "",
+      "          如果你把项目放在沙箱化工具（如某些 AI agent）的工作区里，",
+      "          它可能会重新打上这个标签。把项目移到普通目录里最省事。",
+      "",
+    ].join("\n"),
+  );
+}
 
 async function ensureBuilt() {
   // build.mjs --check builds when stale and exits 0 when up-to-date.
@@ -49,6 +103,8 @@ function resolveElectron() {
 }
 
 async function main() {
+  // Checked before anything else: this failure mode produces no other signal.
+  warnIfLowIntegrity(join(pkgRoot, "..", ".."));
   await ensureBuilt();
   const electron = resolveElectron();
   const child = spawn(electron, [pkgRoot, ...passthrough], { stdio: "inherit" });
