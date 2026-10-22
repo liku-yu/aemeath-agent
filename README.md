@@ -81,8 +81,10 @@ aemeath/                          npm workspaces
 ## 快速开始
 
 ### 环境要求
-- **Node.js ≥ 20.11**（Windows / Linux / macOS 均可）
+- **Node.js ≥ 22.12** 和 npm（`node -v` 自查；Electron 45 自带这个下限）
+- 约 1 GB 磁盘空间（`node_modules` 里 Electron 本体约 200 MB）
 - 一个 OpenAI 兼容或 Anthropic 兼容的 API（DeepSeek、Moonshot、OpenAI、Anthropic、自建网关…）
+- Windows / Linux / macOS 均可；Windows 无需 WSL2
 
 ### 安装
 
@@ -128,9 +130,24 @@ npm run cli -- --yolo       # 自动允许写入/命令（谨慎）
 
 优先级：**真实环境变量 > 项目 `.aemeath/.env` > `~/.aemeath/config.json` > 默认值**
 
-### 全局配置（已内置）
+### 首次运行：没有配置文件，用默认值
 
-本仓库已附带一份全局配置在 `~/.aemeath/config.json`，**在任何工作目录下都生效**：
+刚 clone 下来时 `~/.aemeath/config.json` **不存在**，程序用内置默认值跑：
+
+| 项 | 默认值 |
+|---|---|
+| 供应商 / 协议 | `deepseek` / `chat`（Chat Completions） |
+| 模型 | `deepseek-chat` |
+| Base URL | `https://api.deepseek.com` |
+| 权限 | 写文件 `ask` / 执行命令 `ask`（每次都问） |
+
+按默认值你只需要一个 **DeepSeek 的 Key** 就能开始：在桌面端「设置 → 模型与接口」
+粘上 Key 点保存，这时才会生成 `~/.aemeath/config.json`。
+
+想用别的供应商，在同一个页面点左侧的供应商卡片切换即可 —— 每个供应商的地址、协议
+和 Key 都各自独立保存。
+
+`config.json` 长这样（**`apiKey` 永远不在这里**，见下一节）：
 
 ```json
 {
@@ -143,10 +160,9 @@ npm run cli -- --yolo       # 自动允许写入/命令（谨慎）
 }
 ```
 
-- `apiKey` **故意留空** —— 按全局规则（API Key 使用规则），需要真实调用时应当先询问，
-  或由你在桌面端「设置」里手填。
-- 想在多个项目间共用同一套设置，就改这个文件；
-- 只想给某个项目特殊设置，用下面的项目级覆盖。
+- 想让多个项目共用同一套设置 → 改这个全局文件
+- 只想给某个项目特殊设置 → 用下面的项目级覆盖
+- 想清空重来 → 删掉这个文件，下次启动就回到默认值
 
 ### 通过桌面端设置
 点左下角 ⚙ 设置 →「模型与接口」，填好后保存（写入 `~/.aemeath/config.json`）。
@@ -420,7 +436,7 @@ skills/aemeath/
 
 ### 头像与桌宠的裁剪
 
-精灵图里角色是**头 + 身体 + 大翅膀**，直接用整格会连翅膀一起缩放，脸很小。
+精灵图里角色是**头 + 身体 + 大翅膀**，直接用整格会连翅膀一起缩放，脸只剩一点点。
 所以渲染时用两个裁剪区域：
 
 | 区域 | 用途 | 计算方式 |
@@ -428,12 +444,15 @@ skills/aemeath/
 | `full` | 桌宠（完整形象） | 所有动画行的并集包围盒 |
 | `bust` | 头像（脸占满） | **单帧**内的头肩区域，取正方形 |
 
-`bust` 的算法要点（都踩过坑）：
+`bust` 的取法有三条约束，任一不满足头像就会失真：
 
-1. **只在单帧内测宽度** —— 之前扫描全部 8 帧取并集，把别的帧的翅膀算了进来
-2. **找最大跳变而不是第一个跳变** —— 头发是渐变的（+20~24px），翅膀是突变的（+55~87px），
+1. **只在单帧内测宽度** —— 跨帧取并集会把别的帧的翅膀算进来
+2. **按最大跳变找边界** —— 头发是渐变的（每列 +20~24px），翅膀是突变的（+55~87px）；
    用比例阈值会被正常发型的增长误触发
-3. **取宽/高的较大值做正方形** —— 之前限制成格高的 55%，**把下巴切掉了 30px**
+3. **取宽、高的较大值做正方形** —— 按格高的比例裁剪会把下巴切掉
+
+如果你换了角色图，这三个参数在 `packages/desktop/src/renderer/aemeath-sprite.js`
+里可以调。
 
 ### 余额与用量
 
@@ -452,13 +471,18 @@ skills/aemeath/
 > 本地用量记录在 `<dataDir>/usage.json`，每次模型调用后写入，与供应商无关。
 
 ## 项目记忆（AEMEATH.md）
-在项目根目录放 `AEMEATH.md`，其内容会自动注入 system prompt：
+
+在被操作的**项目根目录**放一个 `AEMEATH.md`，内容会自动注入 system prompt，
+让 agent 记住这个项目的技术栈和约定：
+
 ```markdown
 # 项目记忆
-- 技术栈：Node 20 + TypeScript，pnpm workspace
+- 技术栈：Node 22 + TypeScript，npm workspaces
 - 测试命令：npm test
 - 约定：不要直接改 dist/，用 npm run build
 ```
+
+完整模板见 [`docs/AEMEATH.md`](docs/AEMEATH.md)，复制过去改名即可。
 
 ## MCP 服务器
 
@@ -556,22 +580,34 @@ Linux/macOS 打包配置已写在 `packages/desktop/package.json` 的 `build` �
 ## 安全说明
 
 ### 关于 API Key（重要）
-本 Agent **不会自行获取或推断任何 API Key**。它按以下**显式来源**读取，按优先级：
 
-1. 进程环境变量：`AEMEATH_API_KEY` → `ANTHROPIC_API_KEY` / `DEEPSEEK_API_KEY` / `MOONSHOT_API_KEY`
-2. 项目内 `.aemeath/.env`
-3. `~/.aemeath/config.json`（你在桌面端设置里保存的）
+**Key 不会写进 `config.json`，也不该往里写。** 它存在独立的 `~/.aemeath/credentials.json`，
+用 AES-256-GCM 加密（桌面端优先用系统钥匙串）。`config.json` 写入前会校验，
+一旦发现疑似密钥字段就**直接拒绝写入并报错**，防止以后改代码时不小心把 Key 写回配置文件。
 
-也就是说，**只有你自己主动提供时它才会使用**：要么设置了对应的环境变量，
-要么在设置面板里填过。没有 Key 时它只会提示你去配置，不会去别处翻。
+**读取 Key 的顺序**（先命中先用）：
 
-若确认过环境变量并想保存到配置，可存到 `~/.aemeath/config.json`（本机明文，注意权限）。
+| 顺序 | 来源 | 说明 |
+|---|---|---|
+| 1 | `AEMEATH_API_KEY` | 显式、与供应商无关 |
+| 2 | `ANTHROPIC_API_KEY` | 历史默认名 |
+| 3 | 厂商变量（`DEEPSEEK_API_KEY` / `MOONSHOT_API_KEY` / `OPENROUTER_API_KEY` …） | **只在厂商跟当前 Base URL 对得上时才用** |
+| 4 | `AEMEATH_ANTHROPIC_API_KEY` | 旧名兼容 |
+| 5 | `credentials.json` 里保存的 Key | 你在设置面板里填的那个 |
+
+> ⚠️ **注意第 5 条排在最后。** 如果你的 shell 里正好设着 `DEEPSEEK_API_KEY`，
+> 它会**盖过**你在设置里保存的 Key，哪怕你用的是别的供应商。想让设置面板里的
+> Key 生效，先把环境变量清掉（`unset DEEPSEEK_API_KEY`）。
+> 项目内的 `.aemeath/.env` 也属于“环境变量”这一层。
+
+没有 Key 时它只提示你去配置，不会去别处翻。
 
 ### 其他
 - Agent 会**真实读写文件、真实执行命令**。请在可信目录使用。
 - 写文件与执行命令默认需要人工批准；危险命令（`rm -rf /`、fork 炸弹、`curl|sh`…）直接拒绝。
 - `--yolo` / 设置里允许后不再询问，请谨慎。
-- 每个项目的配置与数据隔离在 `~/.aemeath/`，不会读取项目里无关的 `.env`。
+- 数据目录 `~/.aemeath/` 是**全机共用**的（会话、凭据、用量都在里面）；
+  想给某个项目单独配置，用项目根目录的 `.aemeath/.env` 覆盖，不要改全局配置。
 
 ## 素材与致谢
 

@@ -166,14 +166,19 @@ export interface AemeathConfig {
   >;
 }
 
-export const defaultBaseUrl = "https://api.anthropic.com";
+/*
+ * The default endpoint must agree with the default provider below, otherwise a
+ * first run configures "deepseek" against an Anthropic URL — a combination that
+ * cannot work and gives no clue why.
+ */
+export const defaultBaseUrl = "https://api.deepseek.com";
 
 export function defaultConfig(): AemeathConfig {
   const dataDir = join(homedir(), ".aemeath");
   return {
     provider: "deepseek",
     apiMode: "chat",
-    model: process.env.AEMEATH_MODEL ?? "claude-sonnet-4-5-20250929",
+    model: process.env.AEMEATH_MODEL ?? "deepseek-chat",
     baseUrl: process.env.AEMEATH_BASE_URL ?? defaultBaseUrl,
     apiKey: process.env.AEMEATH_API_KEY ?? process.env.ANTHROPIC_API_KEY ?? "",
     maxTokens: 8192,

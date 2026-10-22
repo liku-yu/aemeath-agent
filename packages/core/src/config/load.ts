@@ -126,15 +126,21 @@ export function loadConfig(opts: { cwd?: string; overrides?: Partial<AemeathConf
   if (envVal("AEMEATH_BASE_URL")) cfg.baseUrl = envVal("AEMEATH_BASE_URL")!;
 
   /*
-   * Key resolution order (first hit wins):
-   *   1. AEMEATH_API_KEY          — explicit, provider-agnostic
-   *   2. the saved credential     — already hydrated above, scoped to this endpoint
-   *   3. a vendor env var *whose vendor actually matches the endpoint*
-   *   4. ANTHROPIC_API_KEY        — only for an Anthropic endpoint
+   * Key resolution, first hit wins:
+   *   1. AEMEATH_API_KEY            — explicit, provider-agnostic
+   *   2. ANTHROPIC_API_KEY          — arrives via defaultConfig()'s apiKey
+   *   3. a vendor env var *whose vendor matches the endpoint* (DEEPSEEK_API_KEY, …)
+   *   4. AEMEATH_ANTHROPIC_API_KEY  — legacy name
+   *   5. the credential store       — the key you saved in the app (falls through
+   *                                   to this only when nothing above supplied one)
    *
-   * Step 3 is deliberately vendor-matched. Blindly using DEEPSEEK_API_KEY for a
-   * self-hosted gateway silently replaced the user's own key with an unrelated
-   * one, which then failed auth in a confusing way.
+   * Step 3 is deliberately vendor-matched: blindly using DEEPSEEK_API_KEY for a
+   * self-hosted gateway replaced the user's own key with an unrelated one and
+   * failed auth confusingly.
+   *
+   * NOTE (order): the store is the *last* fallback, so an ambient vendor key in
+   * the environment outranks a key saved in the app. That is the current
+   * behaviour; see the README's "关于 API Key" for the user-facing description.
    */
   const vendorKeyFor = (baseUrl: string): string | undefined => {
     if (/deepseek/i.test(baseUrl)) return envVal("DEEPSEEK_API_KEY");

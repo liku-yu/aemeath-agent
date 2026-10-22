@@ -2,7 +2,7 @@
 
 # 项目记忆
 
-- 技术栈：Node.js 20 + TypeScript，npm workspaces
+- 技术栈：Node.js 22 + TypeScript，npm workspaces
 - 构建：`npm run build`
 - 测试：`npm test`
 - 代码风格：2 空格缩进，使用 ESM（`.js` 后缀导入）
