@@ -1,6 +1,5 @@
 {
-  "$schema": "https://example.com/aemeath-config.schema.json",
-  "model": "deepseek-chat",
+    "model": "deepseek-chat",
   "baseUrl": "https://api.deepseek.com",
   "apiKey": "",
   "maxTokens": 8192,

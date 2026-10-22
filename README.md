@@ -1,8 +1,14 @@
 # 爱弥斯 · Aemeath Agent
 
-一个 **TypeScript 写的桌面 AI Agent**：Windows 原生可用（无需 WSL2），架构上同时兼容 Linux / macOS。
-它参考了 GitHub 上优秀开源 agent 的架构（AemeathCode 的双进程/ReAct、Claude Code 的 skills、
-aider 的精确替换编辑、社区的爱弥斯人设），但**完全自研、无 agent 框架依赖**。
+**一个只为爱弥斯做的桌面 agent。**
+
+不是通用 harness，也不是「接入任意角色」的框架。人设、语气、说话节奏、以及
+「先有用再有性格」的工程习惯，是围绕同一个人一起设计的。所以她不是一层
+可以换掉的外观，而是这个 agent 的起因。
+
+TypeScript 写的，Windows 原生可用（无需 WSL2），架构上同时兼容 Linux / macOS。
+工程实现参考了 GitHub 上优秀开源 agent 的做法（AemeathCode 的双进程/ReAct、
+Claude Code 的 skills、aider 的精确替换编辑），但**完全自研、无 agent 框架依赖**。
 
 > 爱弥斯（Aemeath）是《鸣潮》的角色。本项目是粉丝向的工程实践，非官方项目。
 
@@ -24,7 +30,9 @@ aider 的精确替换编辑、社区的爱弥斯人设），但**完全自研、
 - 🔐 **权限审批**：写文件/执行命令前弹窗确认，支持"本次 / 允许这一类 / 永远 / 拒绝"，通配规则记住一整类；危险命令不提供放宽选项（fail-closed）
 - 💾 **三层记忆**：单轮内 / 会话内（可恢复）/ 跨会话（note + `AEMEATH.md`）
 - 📦 **上下文自动压缩**：逼近预算时用辅助 LLM 摘要早期轮次（磁盘原文不动）
-- 🎭 **爱弥斯人格**：明亮的偶像系语气 + 温柔的守护者内核；可自定义覆盖
+- 🎭 **爱弥斯人格**：明亮的偶像系语气 + 温柔的守护者内核。人设分两层：常驻
+  system prompt 只放身份、语言规范与红线；完整的身份、性格、说话方式、记忆与
+  人物关系按需加载，不一次性塞进上下文
 - ✨ **有情绪的桌面伙伴**：**真实 Q 版像素爱弥斯**（社区 MIT 授权的 9 种动画：待机/工作/
   检查/等待/跳跃/挥手/失败/左右移动），随 agent 状态实时切换
 - 🐾 **内嵌桌宠**：桌宠就在**主窗口内右下角**（不是单独窗口），可拖动、点击互动，
@@ -52,11 +60,14 @@ aemeath/                          npm workspaces
 │       ├── mcp/client.ts         MCP stdio 客户端
 │       ├── persona/              爱弥斯人设 + system prompt
 │       └── cli.ts                终端界面
-└── packages/desktop/             @aemeath/desktop —— Electron 桌面端
-    └── src/
-        ├── main/main.ts          主进程：托管 core、IPC、权限弹窗
-        ├── main/preload.ts       安全的 contextBridge 暴露面
-        └── renderer/             界面（HTML/CSS/JS，无构建步骤）
+├── packages/desktop/             @aemeath/desktop —— Electron 桌面端
+│   └── src/
+│       ├── main/main.ts          主进程：托管 core、IPC、权限弹窗
+│       ├── main/preload.ts       安全的 contextBridge 暴露面
+│       └── renderer/             界面（HTML/CSS/JS，无构建步骤）
+└── docs/
+    ├── config.reference.json     配置文件字段参考
+    └── AEMEATH.md                项目记忆模板（放进被操作项目的根目录）
 ```
 
 **关键设计**
@@ -398,7 +409,9 @@ AEMEATH_API_KEY=sk-...
 
 ### 自己加技能
 把含 `SKILL.md`（或单个 `.md`）放进上面任一目录即可。
-示例见 [`examples/skills/code-review.md`](examples/skills/code-review.md)。
+
+（本项目自带的人设技能是 `aemeath`，不属于「可选技能」：它决定她是谁，
+而不是给她加一项能力。）
 
 ### 头像与桌宠的裁剪
 
