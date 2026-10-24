@@ -6,7 +6,7 @@
   min-width: 240px;
   max-width: 320px;
   flex: 0 0 264px;
-  background: rgba(20, 14, 22, 0.75);
+  background: var(--bg-2);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -123,8 +123,10 @@
 .topbar-right { display: flex; align-items: center; gap: 8px; }
 .pill {
   background: var(--bg-3); border: 1px solid var(--border); color: var(--pink);
-  padding: 3px 10px; border-radius: 999px; font-size: 11px; font-family: var(--mono);
+  padding: 3px 10px; border-radius: 999px; font-size: var(--fs-xs);
+  font-family: var(--mono); transition: border-color 0.15s, background 0.15s;
 }
+.pill:hover { border-color: var(--border-hover); }
 .pill.coin { color: var(--yellow); }
 .pill.danger { color: var(--red); }
 
@@ -168,14 +170,19 @@
 /* Buttons */
 .btn {
   background: var(--bg-3); color: var(--text); border: 1px solid var(--border);
-  border-radius: 9px; padding: 9px 14px; cursor: pointer; font-size: 13px; transition: 0.15s;
+  border-radius: var(--r-md); padding: 8px 14px; cursor: pointer;
+  font-size: var(--fs-md); font-weight: 500; line-height: 1.4;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  outline: none;
 }
-.btn:hover { border-color: var(--pink-2); }
+.btn:hover { border-color: var(--border-hover); background: var(--bg-4); }
+.btn:focus-visible { border-color: var(--pink-2); box-shadow: var(--focus-ring); }
 .btn.primary { background: linear-gradient(135deg, var(--pink), var(--pink-2)); color: var(--ink-on-accent); border: none; font-weight: 600; }
 .btn.primary:hover { filter: brightness(1.08); }
-.btn.ghost { background: transparent; }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn.ghost:hover { background: var(--bg-3); color: var(--text); border-color: var(--border); }
 .btn.danger { background: var(--bg-danger-soft); border-color: var(--border-danger); color: var(--red); }
-.btn.small { padding: 5px 10px; font-size: 12px; }
+.btn.small { padding: 4px 10px; font-size: var(--fs-sm); border-radius: var(--r-sm); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ============================ Embedded desktop pet ======================= */
@@ -280,7 +287,7 @@
 
 /* Overlay / modal (unchanged, kept below pet z-index) */
 .overlay {
-  position: fixed; inset: 0; background: rgba(8, 4, 10, 0.72); backdrop-filter: blur(3px);
+  position: fixed; inset: 0; background: var(--overlay-bg); backdrop-filter: blur(6px);
   display: grid; place-items: center; z-index: 50;
 }
 .overlay.hidden { display: none; }
@@ -303,11 +310,13 @@
 /* Above every dialog: the template picker is opened from settings too. */
 #tpl-overlay { z-index: 85; }
 .modal {
-  background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
-  width: 620px; max-width: 92vw; max-height: 84vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  background: var(--bg-2); border: 1px solid var(--border-strong);
+  border-radius: var(--r-xl); padding: var(--s-5);
+  width: 620px; max-width: 92vw; max-height: 84vh; overflow-y: auto;
+  box-shadow: var(--shadow-modal);
 }
 .modal.wide { width: 560px; }
-.modal-title { font-weight: 700; margin-bottom: 12px; color: var(--pink); }
+.modal-title { font-size: var(--fs-lg); font-weight: 600; margin-bottom: var(--s-3); color: var(--text); letter-spacing: 0.01em; }
 .modal-detail {
   background: var(--bg-code); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
   font-family: var(--mono); font-size: 12px; max-height: 42vh; overflow: auto; white-space: pre-wrap; word-break: break-word;
@@ -315,10 +324,14 @@
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 label { display: block; margin-bottom: 12px; color: var(--muted); font-size: 12px; }
 label input {
-  display: block; width: 100%; margin-top: 5px; background: var(--bg-3); border: 1px solid var(--border);
-  color: var(--text); border-radius: 9px; padding: 9px 11px; font-size: 13px; outline: none;
+  display: block; width: 100%; margin-top: 5px; background: var(--bg-3);
+  border: 1px solid var(--border); color: var(--text); border-radius: var(--r-md);
+  padding: 9px 11px; font-size: var(--fs-md); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
-label input:focus { border-color: var(--pink-2); }
+label input:hover { border-color: var(--border-hover); }
+label input:focus { border-color: var(--pink-2); background: var(--bg-4); box-shadow: var(--focus-ring); }
+label input::placeholder { color: var(--muted-2); }
 .row { display: flex; gap: 8px; margin-top: 5px; }
 .row input { margin-top: 0; }
 @keyframes blink { 50% { opacity: 0.25; } }
@@ -386,17 +399,20 @@ label input:focus { border-color: var(--pink-2); }
 
 /* Welcome card */
 .welcome {
-  max-width: 720px; margin: 8px auto 0; text-align: center;
-  background: linear-gradient(160deg, rgba(58,36,64,0.55), rgba(36,22,41,0.35));
-  border: 1px solid var(--border); border-radius: 18px; padding: 26px 22px;
+  max-width: 660px; margin: 8px auto 0; text-align: center;
+  /* No fill and a lighter border: the backdrop is already dark, and a second
+     panel on top of it just added another rectangle to parse. */
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: var(--s-5) 24px;
 }
-.welcome h2 { margin: 0 0 6px; font-size: 20px; color: var(--pink); letter-spacing: 1px; }
-.welcome p { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.7; }
-.welcome .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.welcome h2 { margin: 0 0 var(--s-2); font-size: var(--fs-xl); font-weight: 600; color: var(--text); letter-spacing: 0.02em; }
+.welcome p { margin: 0 0 var(--s-4); color: var(--muted); font-size: var(--fs-md); line-height: 1.7; }
+.welcome .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); justify-content: center; }
 .chip {
-  background: var(--bg-3); border: 1px solid var(--border); color: var(--text);
-  border-radius: 999px; padding: 7px 14px; font-size: 12.5px; cursor: pointer;
-  transition: 0.15s;
+  background: var(--bg-2); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 999px; padding: 6px 14px; font-size: var(--fs-sm); cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.15s;
 }
 .chip:hover { border-color: var(--pink-2); color: var(--pink); transform: translateY(-1px); }
 

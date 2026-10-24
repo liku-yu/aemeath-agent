@@ -634,9 +634,14 @@ function handleEvent(ev) {
 }
 
 function addNotice(text, isError = false) {
+  /*
+   * Notices are system output, not conversation. Rendering them as `.msg >
+   * .bubble` made them indistinguishable from the assistant's own messages —
+   * a hint, a failure and a reply all looked like the same thing speaking.
+   */
   const el = document.createElement("div");
-  el.className = "msg";
-  el.innerHTML = `<div class="bubble" style="color:${isError ? "var(--red)" : "var(--muted)"};font-size:12px">${escapeHtml(text)}</div>`;
+  el.className = "notice" + (isError ? " err" : "");
+  el.textContent = text;
   messagesEl.appendChild(el);
   scrollToBottom();
 }

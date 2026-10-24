@@ -601,6 +601,9 @@ w.webContents.once("did-finish-load", async () => {
         // shows the UI under review rather than the chat view.
         await w.webContents.executeJavaScript(
           `(() => {
+             // AEMEATH_SHOT_FLOW=chat leaves the settings dialog closed so the
+             // transcript itself can be reviewed.
+             if ("${process.env.AEMEATH_SHOT_FLOW || ""}" === "chat") return true;
              document.getElementById("settings-overlay").classList.remove("hidden");
              document.querySelector('[data-tab="model"]').click();
              return true;

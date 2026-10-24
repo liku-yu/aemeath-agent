@@ -1,55 +1,86 @@
 /*
  * Design tokens.
  *
- * Everything in styles.css resolves through these. Nothing here changes the
- * rendered result — the values are the exact literals that were previously
- * scattered across 1000 lines, collected so a theme only has to override this
- * block.
+ * Everything in the component files resolves through these, so a re-theme means
+ * editing this one file. Grouped by role, not by component: a component may use
+ * several groups, but a token never means two different things.
  *
- * Grouped by role, not by component: a component file may use several groups,
- * but a token never means two different things.
+ * Scales (radius / spacing / type) exist so new rules can be written without
+ * inventing a number. The names are intentionally boring — the value is that
+ * there is exactly one of each.
  */
 :root {
-  /* ---------- surfaces ---------- */
-  --bg: #140f17;                 /* window background */
-  --bg-2: #1c1520;               /* panels, modals */
-  --bg-3: #241b2a;               /* inputs, hover, raised rows */
-  --bg-code: #100b13;            /* inline code, code blocks */
-  --bg-avatar: #241629;          /* avatar / mini-avatar backing */
-  --bg-avatar-lo: #3a2440;       /* avatar gradient start */
-  --bg-avatar-think: #33203a;    /* avatar gradient, thinking state */
-  --bg-bubble-user: #3a2540;     /* user bubble gradient start */
-  --bg-bubble-user-2: #2c1d33;   /* user bubble gradient end */
-  --bg-danger-soft: #3a1f28;     /* destructive button / row hover */
+  /* ---------- surfaces (four steps of elevation) ---------- */
+  --bg: #0d0911;                 /* window */
+  --bg-2: #150f1a;               /* panels, modals */
+  --bg-3: #1d1524;               /* inputs, hover, raised rows */
+  --bg-4: #261c2e;               /* highest: cards, active rows */
+  --bg-code: #09060c;            /* inline code, code blocks */
+  --bg-avatar: #241629;
+  --bg-avatar-lo: #3a2440;
+  --bg-avatar-think: #33203a;
+  --bg-bubble-user: #33203f;     /* was flat lavender; now deeper, less noisy */
+  --bg-bubble-user-2: #271a31;
+  --bg-danger-soft: #3a1f28;
+  --bg-success-soft: #16301f;
+  --bg-warn-soft: #332a12;
 
   /* ---------- text ---------- */
-  --text: #f3ecf6;
-  --text-strong: #f6dfef;        /* brightest tier, used inside bubbles */
-  --muted: #a892b3;
-  --ink-on-accent: #2a0f1e;      /* text and knobs drawn on the pink gradient */
+  --text: #f6f1f9;
+  --text-strong: #fdf8ff;
+  --muted: #a291ad;              /* secondary labels */
+  --muted-2: #7a6885;            /* tertiary: timings, counts, placeholders */
+  --ink-on-accent: #1b0f16;      /* text/knobs drawn on the pink gradient */
 
   /* ---------- borders ---------- */
-  --border: #33263a;
-  --border-2: #4a3453;           /* user bubble */
-  --border-hover: #55405f;       /* bubble tail, hover affordances */
+  --border: #2c2135;
+  --border-2: #402f4d;           /* user bubble */
+  --border-hover: #55405f;
+  --border-strong: #3d2f48;      /* panel dividers that must read */
   --border-danger: #6b2f3e;
-  --border-ok: #3f6b4c;
+  --border-ok: #2f6b45;
   --border-warn: #6a5426;
 
   /* ---------- accents ---------- */
-  --pink: #f5a9d0;
-  --pink-2: #e17fb5;
-  --blue: #8fb8ff;
-  --green: #9ee6b4;              /* background tints */
-  --green-strong: #3fb950;       /* text / border on light-ish surfaces */
-  --red: #ff8a9b;
-  --yellow: #f5dda0;
+  --pink: #ffa8d5;
+  --pink-2: #e57ab8;
+  --blue: #9cc0ff;
+  --green: #8ee6a8;
+  --green-strong: #3fb950;
+  --red: #ff8b9c;
+  --yellow: #f7dda0;
   --orange: #e3b341;
 
-  /* ---------- chrome ---------- */
-  --scrollbar-thumb: #3a2b42;
+  /* accent tints, for selected rows and focus rings */
+  --pink-wash: rgba(255, 168, 213, 0.10);
+  --pink-wash-2: rgba(255, 168, 213, 0.16);
+  --focus-ring: 0 0 0 3px rgba(255, 168, 213, 0.18);
 
-  /* ---------- shape & type ---------- */
-  --radius: 12px;
+  /* ---------- chrome ---------- */
+  --scrollbar-thumb: #372a40;
+  --overlay-bg: rgba(6, 3, 9, 0.76);
+  --shadow-modal: 0 24px 70px rgba(0, 0, 0, 0.66);
+  --shadow-raised: 0 2px 8px rgba(0, 0, 0, 0.35);
+
+  /* ---------- shape ---------- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --radius: 12px;                /* legacy alias, still referenced */
+
+  /* ---------- spacing ---------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+
+  /* ---------- type ---------- */
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 20px;
   --mono: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
 }

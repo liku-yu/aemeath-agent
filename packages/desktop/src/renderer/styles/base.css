@@ -3,10 +3,18 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
-  background: radial-gradient(1200px 800px at 80% -10%, #2a1b33 0%, var(--bg) 55%);
+  /* Two very wide, very soft glows instead of one corner hotspot: the corner
+     version made the top-right noticeably brighter than everything else. */
+  background:
+    radial-gradient(900px 620px at 78% -12%, rgba(90, 48, 110, 0.5), transparent 62%),
+    radial-gradient(700px 520px at 8% 108%, rgba(60, 40, 95, 0.38), transparent 60%),
+    var(--bg);
+  background-color: var(--bg);
   color: var(--text);
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
   font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
 

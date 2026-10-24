@@ -85,9 +85,9 @@
 
 .prov-detail { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 
-.prov-title { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.prov-title { display: flex; align-items: center; gap: var(--s-2); padding-bottom: 10px; border-bottom: 1px solid var(--border-strong); }
 .prov-title-logo { font-size: 18px; line-height: 1; }
-.prov-title-name { flex: 1 1 auto; min-width: 0; font-weight: 600; color: var(--pink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prov-title-name { flex: 1 1 auto; min-width: 0; font-size: var(--fs-lg); font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Mirrors .prov-detail's own spacing so wrapping the fields changes no layout. */
 .prov-detail-fields { display: flex; flex-direction: column; gap: 10px; }
@@ -121,14 +121,14 @@
   min-height: 54px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--bg-3);
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color 0.12s, background 0.12s, transform 0.12s;
 }
-.tpl-card:hover { border-color: var(--pink-2); background: var(--bg-2); }
+.tpl-card:hover { border-color: var(--pink-2); background: var(--bg-4); transform: translateY(-1px); }
 .tpl-card:disabled { opacity: 0.55; cursor: default; }
 
 .tpl-card-glyph { flex: 0 0 auto; font-size: 20px; line-height: 1; }

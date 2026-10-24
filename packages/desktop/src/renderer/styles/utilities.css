@@ -72,3 +72,15 @@
 /* A read-only derived value in a form should not look editable. */
 input[readonly] { color: var(--muted); cursor: default; }
 
+
+/* System notices: a quiet line between messages, not a speaker. */
+.notice {
+  align-self: center;
+  max-width: 640px;
+  text-align: center;
+  color: var(--muted-2);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  padding: 2px 12px;
+}
+.notice.err { color: var(--red); }
