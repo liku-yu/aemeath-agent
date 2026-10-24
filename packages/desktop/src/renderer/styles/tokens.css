@@ -1,0 +1,55 @@
+/*
+ * Design tokens.
+ *
+ * Everything in styles.css resolves through these. Nothing here changes the
+ * rendered result — the values are the exact literals that were previously
+ * scattered across 1000 lines, collected so a theme only has to override this
+ * block.
+ *
+ * Grouped by role, not by component: a component file may use several groups,
+ * but a token never means two different things.
+ */
+:root {
+  /* ---------- surfaces ---------- */
+  --bg: #140f17;                 /* window background */
+  --bg-2: #1c1520;               /* panels, modals */
+  --bg-3: #241b2a;               /* inputs, hover, raised rows */
+  --bg-code: #100b13;            /* inline code, code blocks */
+  --bg-avatar: #241629;          /* avatar / mini-avatar backing */
+  --bg-avatar-lo: #3a2440;       /* avatar gradient start */
+  --bg-avatar-think: #33203a;    /* avatar gradient, thinking state */
+  --bg-bubble-user: #3a2540;     /* user bubble gradient start */
+  --bg-bubble-user-2: #2c1d33;   /* user bubble gradient end */
+  --bg-danger-soft: #3a1f28;     /* destructive button / row hover */
+
+  /* ---------- text ---------- */
+  --text: #f3ecf6;
+  --text-strong: #f6dfef;        /* brightest tier, used inside bubbles */
+  --muted: #a892b3;
+  --ink-on-accent: #2a0f1e;      /* text and knobs drawn on the pink gradient */
+
+  /* ---------- borders ---------- */
+  --border: #33263a;
+  --border-2: #4a3453;           /* user bubble */
+  --border-hover: #55405f;       /* bubble tail, hover affordances */
+  --border-danger: #6b2f3e;
+  --border-ok: #3f6b4c;
+  --border-warn: #6a5426;
+
+  /* ---------- accents ---------- */
+  --pink: #f5a9d0;
+  --pink-2: #e17fb5;
+  --blue: #8fb8ff;
+  --green: #9ee6b4;              /* background tints */
+  --green-strong: #3fb950;       /* text / border on light-ish surfaces */
+  --red: #ff8a9b;
+  --yellow: #f5dda0;
+  --orange: #e3b341;
+
+  /* ---------- chrome ---------- */
+  --scrollbar-thumb: #3a2b42;
+
+  /* ---------- shape & type ---------- */
+  --radius: 12px;
+  --mono: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+}

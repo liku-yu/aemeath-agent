@@ -1,0 +1,74 @@
+/* Last in the cascade on purpose: .hidden must beat component display rules. */
+
+/* ------------------------------- utilities ------------------------------- */
+
+/*
+ * Generic hide.
+ *
+ * Only compound rules existed (`.overlay.hidden`, `.settings-body.hidden`, …), so
+ * a bare `class="btn hidden"` stayed on screen — the "restore default" and
+ * "keep only detected" buttons were visible even when they had nothing to do.
+ *
+ * Declared last and without !important so the compound rules still win:
+ * `.pet-dock.hidden` fades out via opacity and must keep doing that.
+ */
+.hidden { display: none; }
+
+
+/* ------------------------------ context meter ---------------------------- */
+
+.ctx-meter { padding: 4px 6px; }
+
+.ctx-track {
+  display: block;
+  width: 34px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+
+.ctx-track > i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--green);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+/* Amber before it becomes a problem, red when compaction is imminent. */
+.ctx-track > i.warn { background: var(--yellow); }
+.ctx-track > i.bad  { background: var(--red); }
+
+
+/* --------------------------- dialog text input --------------------------- */
+
+.confirm-input { display: block; margin: 12px 0 0; }
+.confirm-input > span { display: block; margin-bottom: 5px; }
+
+.confirm-input input {
+  display: block;
+  width: 100%;
+  margin-top: 0;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 9px 11px;
+  font-size: 13px;
+  outline: none;
+}
+.confirm-input input:focus { border-color: var(--pink-2); }
+
+/* Nudge when the confirm button was pressed with the field still empty. */
+.confirm-input input.shake { animation: inputShake 0.4s ease; border-color: var(--red); }
+
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* A read-only derived value in a form should not look editable. */
+input[readonly] { color: var(--muted); cursor: default; }
+

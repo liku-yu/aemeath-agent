@@ -526,6 +526,35 @@ icacls "<项目目录>" /setintegritylevel (OI)(CI)M
 
 ---
 
+## 换主题
+
+所有颜色、圆角、字体都收在**一个文件**里：
+
+```
+packages/desktop/src/renderer/styles/tokens.css
+```
+
+改这里就够了，不用碰 800 行组件样式。token 按**语义**分组，不按组件：
+
+| 组 | 例子 | 用途 |
+|---|---|---|
+| 表面 | `--bg` `--bg-2` `--bg-3` `--bg-code` | 窗口 / 面板 / 输入框 / 代码块 |
+| 文字 | `--text` `--muted` `--ink-on-accent` | 正文 / 次要 / 粉底上的深色字 |
+| 边框 | `--border` `--border-2` `--border-hover` | 常规 / 气泡 / 悬停 |
+| 强调 | `--pink` `--pink-2` `--blue` `--green` `--red` `--yellow` | 品牌色与状态色 |
+| 语义 | `--border-danger` `--border-ok` `--border-warn` | 危险 / 成功 / 警告的容器边 |
+
+样式表按顺序加载，顺序有意义：
+
+```
+tokens → base → app → settings → provider → utilities
+```
+
+`utilities.css` 必须最后 —— 它的 `.hidden` 要能盖住组件的 `display` 规则。
+
+想整体换个色调，通常只改「表面」和「强调」两组就够；四个预设色（`--pink` 等）
+换掉，整套 UI 会跟着变。
+
 ## 测试
 
 ```bash

@@ -1,0 +1,14 @@
+/* Reset, document and root layout. */
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: radial-gradient(1200px 800px at 80% -10%, #2a1b33 0%, var(--bg) 55%);
+  color: var(--text);
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+#app { display: flex; height: 100vh; }
+
