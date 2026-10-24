@@ -59,7 +59,7 @@
   width: 100%;
   padding: 6px 8px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--text);
   font-size: 12.5px;
@@ -120,15 +120,18 @@
   gap: 10px;
   min-height: 54px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
-  background: var(--bg-3);
+  background: var(--glass-sheen), var(--glass-2);
+  backdrop-filter: var(--glass-blur-soft);
+  -webkit-backdrop-filter: var(--glass-blur-soft);
+  box-shadow: var(--glass-hi);
   color: var(--text);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s, transform 0.12s;
 }
-.tpl-card:hover { border-color: var(--pink-2); background: var(--bg-4); transform: translateY(-1px); }
+.tpl-card:hover { border-color: var(--glass-border-strong); background: var(--glass-sheen), var(--glass-3); transform: translateY(-1px); }
 .tpl-card:disabled { opacity: 0.55; cursor: default; }
 
 .tpl-card-glyph { flex: 0 0 auto; font-size: 20px; line-height: 1; }

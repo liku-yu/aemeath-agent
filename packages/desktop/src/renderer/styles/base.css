@@ -2,14 +2,50 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
-body {
-  /* Two very wide, very soft glows instead of one corner hotspot: the corner
-     version made the top-right noticeably brighter than everything else. */
+
+/*
+ * The backdrop the glass refracts.
+ *
+ * A translucent surface needs colour behind it — over a flat dark fill, "liquid
+ * glass" just looks like a smudge. These are fixed, blurred colour fields drawn
+ * behind everything; nothing here is interactive and it costs one paint.
+ *
+ * Kept as gradients rather than an image so it stays crisp at any window size
+ * and adds nothing to the bundle.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  /*
+   * Smaller and dimmer than the first attempt. Wide 30%-alpha fields covered the
+   * whole window, so everything sat behind the same purple wash and the layout
+   * lost its depth — distinct light pools read as glass, an even tint reads as
+   * fog.
+   */
   background:
-    radial-gradient(900px 620px at 78% -12%, rgba(90, 48, 110, 0.5), transparent 62%),
-    radial-gradient(700px 520px at 8% 108%, rgba(60, 40, 95, 0.38), transparent 60%),
-    var(--bg);
-  background-color: var(--bg);
+    radial-gradient(closest-side, rgba(255, 122, 199, 0.22), transparent 100%) 12% 6%/34% 30% no-repeat,
+    radial-gradient(closest-side, rgba(122, 108, 255, 0.22), transparent 100%) 88% 2%/30% 28% no-repeat,
+    radial-gradient(closest-side, rgba(74, 168, 255, 0.16), transparent 100%) 72% 94%/36% 32% no-repeat,
+    radial-gradient(closest-side, rgba(255, 158, 120, 0.11), transparent 100%) 4% 88%/28% 26% no-repeat;
+  filter: blur(72px) saturate(115%);
+}
+
+/* Vignette: pulls the corners back down so the glass has an edge to sit against. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 40%, transparent 42%, rgba(8, 4, 16, 0.55) 100%);
+}
+
+body {
+  background-color: var(--bg-deep);
+  background-image: linear-gradient(165deg, var(--bg) 0%, var(--bg-deep) 68%);
   color: var(--text);
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
   font-size: 14px;
@@ -18,5 +54,4 @@ body {
   overflow: hidden;
 }
 
-#app { display: flex; height: 100vh; }
-
+#app { display: flex; height: 100vh; background: transparent; }

@@ -2,71 +2,98 @@
  * Design tokens.
  *
  * Everything in the component files resolves through these, so a re-theme means
- * editing this one file. Grouped by role, not by component: a component may use
- * several groups, but a token never means two different things.
+ * editing this one file. Grouped by role, not by component.
  *
- * Scales (radius / spacing / type) exist so new rules can be written without
- * inventing a number. The names are intentionally boring — the value is that
- * there is exactly one of each.
+ * This palette is built for a translucent ("liquid glass") surface language:
+ * the base is dark but not black, because glass needs something legible behind
+ * it, and the decorative blobs in base.css provide the colour that the glass
+ * refracts. Surfaces are expressed as white-alpha overlays rather than solid
+ * fills so they read the same over any backdrop.
  */
 :root {
-  /* ---------- surfaces (four steps of elevation) ---------- */
-  --bg: #0d0911;                 /* window */
-  --bg-2: #150f1a;               /* panels, modals */
-  --bg-3: #1d1524;               /* inputs, hover, raised rows */
-  --bg-4: #261c2e;               /* highest: cards, active rows */
-  --bg-code: #09060c;            /* inline code, code blocks */
+  /* ---------- base ---------- */
+  --bg: #171129;                 /* window, deliberately not near-black */
+  --bg-deep: #0f0b1c;            /* vignette edges */
+  --bg-2: #1e1730;
+  --bg-3: #271e3c;
+  --bg-4: #332749;
+  --bg-code: #0c0817;
   --bg-avatar: #241629;
   --bg-avatar-lo: #3a2440;
   --bg-avatar-think: #33203a;
-  --bg-bubble-user: #33203f;     /* was flat lavender; now deeper, less noisy */
-  --bg-bubble-user-2: #271a31;
-  --bg-danger-soft: #3a1f28;
-  --bg-success-soft: #16301f;
-  --bg-warn-soft: #332a12;
+  --bg-bubble-user: #3b2d54;
+  --bg-bubble-user-2: #2c2142;
+  --bg-danger-soft: rgba(255, 90, 120, 0.14);
+  --bg-success-soft: rgba(80, 220, 140, 0.13);
+  --bg-warn-soft: rgba(240, 200, 90, 0.13);
+
+  /* ---------- glass ---------- */
+  /* Alpha overlays, not solid colours: one recipe works over any backdrop. */
+  --glass-1: rgba(255, 255, 255, 0.07);    /* large panels: sidebar, modal */
+  --glass-2: rgba(255, 255, 255, 0.085);   /* cards, inputs */
+  --glass-3: rgba(255, 255, 255, 0.13);    /* hover, selected */
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-strong: rgba(255, 255, 255, 0.20);
+  --glass-blur: blur(22px) saturate(170%) brightness(1.1);
+  --glass-blur-soft: blur(14px) saturate(150%) brightness(1.06);
+  /*
+   * A directional sheen, layered *under* the tint.
+   *
+   * Frosted glass alone reads as a translucent panel. The thing that says
+   * "glass" is a highlight running across the surface at an angle, which is why
+   * this sits on every glass element as a background layer rather than a border.
+   */
+  --glass-sheen: linear-gradient(
+    152deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.035) 34%,
+    rgba(255, 255, 255, 0) 58%
+  );
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --glass-lo: inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  --glass-shadow: 0 16px 46px rgba(3, 0, 10, 0.48);
 
   /* ---------- text ---------- */
-  --text: #f6f1f9;
-  --text-strong: #fdf8ff;
-  --muted: #a291ad;              /* secondary labels */
-  --muted-2: #7a6885;            /* tertiary: timings, counts, placeholders */
-  --ink-on-accent: #1b0f16;      /* text/knobs drawn on the pink gradient */
+  --text: #f7f3ff;
+  --text-strong: #ffffff;
+  --muted: #b3a6c8;
+  --muted-2: #8a7ca1;
+  --ink-on-accent: #1b0f16;
 
   /* ---------- borders ---------- */
-  --border: #2c2135;
-  --border-2: #402f4d;           /* user bubble */
-  --border-hover: #55405f;
-  --border-strong: #3d2f48;      /* panel dividers that must read */
-  --border-danger: #6b2f3e;
-  --border-ok: #2f6b45;
-  --border-warn: #6a5426;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-2: rgba(255, 255, 255, 0.16);
+  --border-hover: rgba(255, 255, 255, 0.24);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-danger: rgba(255, 110, 135, 0.45);
+  --border-ok: rgba(80, 220, 140, 0.45);
+  --border-warn: rgba(240, 200, 90, 0.45);
 
   /* ---------- accents ---------- */
   --pink: #ffa8d5;
-  --pink-2: #e57ab8;
+  --pink-2: #f07fc4;
   --blue: #9cc0ff;
   --green: #8ee6a8;
-  --green-strong: #3fb950;
+  --green-strong: #52d98b;
   --red: #ff8b9c;
   --yellow: #f7dda0;
   --orange: #e3b341;
 
-  /* accent tints, for selected rows and focus rings */
-  --pink-wash: rgba(255, 168, 213, 0.10);
-  --pink-wash-2: rgba(255, 168, 213, 0.16);
-  --focus-ring: 0 0 0 3px rgba(255, 168, 213, 0.18);
+  --pink-wash: rgba(255, 168, 213, 0.12);
+  --pink-wash-2: rgba(255, 168, 213, 0.20);
+  --focus-ring: 0 0 0 3px rgba(255, 168, 213, 0.22);
 
   /* ---------- chrome ---------- */
-  --scrollbar-thumb: #372a40;
-  --overlay-bg: rgba(6, 3, 9, 0.76);
-  --shadow-modal: 0 24px 70px rgba(0, 0, 0, 0.66);
-  --shadow-raised: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --overlay-bg: rgba(9, 5, 18, 0.62);
+  --shadow-modal: 0 28px 80px rgba(2, 0, 8, 0.62);
+  --shadow-raised: 0 2px 10px rgba(3, 0, 10, 0.40);
 
   /* ---------- shape ---------- */
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 18px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
   --radius: 12px;                /* legacy alias, still referenced */
 
   /* ---------- spacing ---------- */
@@ -83,4 +110,24 @@
   --fs-lg: 15px;
   --fs-xl: 20px;
   --mono: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+}
+
+/*
+ * Transparency off: fall back to solid surfaces.
+ *
+ * Chromium honours this when the OS "transparency effects" setting is off, and
+ * it keeps text readable for anyone who needs it. Glass is decoration; nothing
+ * may become unreadable because of it.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-1: #1e1730;
+    --glass-2: #271e3c;
+    --glass-3: #332749;
+    --glass-blur: none;
+    --glass-blur-soft: none;
+    --glass-hi: none;
+    --glass-lo: none;
+    --overlay-bg: rgba(9, 5, 18, 0.88);
+  }
 }

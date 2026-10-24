@@ -78,7 +78,7 @@ input[readonly] { color: var(--muted); cursor: default; }
   align-self: center;
   max-width: 640px;
   text-align: center;
-  color: var(--muted-2);
+  color: var(--muted);
   font-size: var(--fs-xs);
   line-height: 1.6;
   padding: 2px 12px;
