@@ -322,13 +322,19 @@ npm run desktop:dist       # 产物在 packages/desktop/release/
 **为什么不用绿色版**：portable 每次启动要把 312 MB 解压到临时目录，实测
 **4.9 秒**，是安装后的 16 倍。想要的话把 `build.win.target` 改成 `["portable"]`。
 
-**为什么这么大**：100 MB 里 2.7 MB 是项目代码，其余是 Electron 运行时（与
-VS Code ~100 MB 同量级）。构建已做两项裁剪：`electronLanguages` 只留
-zh-CN / en-US（默认 55 个语言包解压 49 MB）、`compression: maximum`。
+**为什么这么大**：90 MB 里 2.7 MB 是项目代码，其余是 Electron 运行时（与
+VS Code ~100 MB 同量级）。构建做了三项裁剪：`electronLanguages` 只留
+zh-CN / en-US（默认 55 个语言包解压 49 MB）、`compression: maximum`、
+关掉 `differentialPackage`（没有更新器，`.blockmap` 白占 10 MB，关掉后
+NSIS 还能用 solid 压缩）。
 再想小只能换 Tauri（5–10 MB），但主进程要用 Rust 重写。
 
 **人设随包走**：`skills/` 打进 `resources/skills`，不依赖工作目录。
 诊断页应显示 `Skills 1 个：aemeath`。
+
+**图标**：`assets/icon-source.svg` 是唯一来源（底块 + Lucide 的 sparkle，
+ISC 协议见 `assets/ICON-LICENSE.txt`）。改完跑 `npm run icon` 重新生成
+七档 `icon.ico` —— 它会用项目自带的 Electron 光栅化，逐档渲染而不是缩放。
 
 **这个包没有代码签名**，Windows SmartScreen 会提示未知发布者；分发给别人
 需要代码签名证书。
