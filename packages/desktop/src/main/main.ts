@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdirSync, writeFileSync, existsSync, readFileSync, statSync, rmSync } from "node:fs";
-import { homedir } from "node:os";
 import {
   loadConfig,
   saveGlobalConfig,
@@ -18,6 +17,7 @@ import {
   connectMcpServers,
   CheckpointStore,
   discoverSkills,
+  skillSearchDirs,
   PROVIDER_PRESETS,
   modelScopeKey,
   CredentialStore,
@@ -194,6 +194,23 @@ function ensureAgent(): Promise<void> {
 async function bootstrapAgent() {
   cfg = loadConfig();
   ensureDataDirs(cfg);
+  /*
+   * First run: write the config file.
+   *
+   * Until now `config.json` only appeared after the user pressed 保存 in
+   * settings, so a fresh install showed "配置文件：尚未创建" and the file people
+   * are told to edit simply was not there. Every other desktop app lays down a
+   * default config on first launch; do the same.
+   *
+   * `apiKey` is blanked for this write so an environment key is not silently
+   * copied onto disk. It stays in memory for this session.
+   */
+  try {
+    const cfgPath = dataPaths(cfg.dataDir).config;
+    if (!existsSync(cfgPath)) saveGlobalConfig({ ...cfg, apiKey: "" });
+  } catch (err) {
+    logHost("warn", "无法写入初始配置", { message: String(err) });
+  }
   tools = new ToolRegistry().registerAll(builtinTools());
   policy = new PermissionPolicy(cfg, dataPaths(cfg.dataDir).permissions);
   session = await SessionStore.create(cfg.dataDir);
@@ -569,6 +586,20 @@ ipcMain.handle("agent:deleteAllSessions", async () => {
   return { ok: true, removed: list.length, sessionId: session.id };
 });
 
+/**
+ * Skills shipped next to a packaged build.
+ *
+ * electron-builder copies the repository's `skills/` into `resources/skills`, so
+ * the persona travels with the .exe instead of depending on the user's working
+ * directory or on a copy in their home folder.
+ *
+ * Undefined in development: there the repository checkout is already on the
+ * search path, and pointing at `resources/` would be wrong.
+ */
+function bundledSkillsDir(): string | undefined {
+  return app.isPackaged ? join(process.resourcesPath, "skills") : undefined;
+}
+
 /** Built-in presets plus any user-declared providers. */
 function allProviders() {
   const custom = cfg.customProviders ?? {};
@@ -690,14 +721,7 @@ ipcMain.handle("agent:health", async () => {
   })));
 
   checks.push(check("Skills", () => {
-    const dirs = [
-      join(cfg.cwd, ".aemeath", "skills"),
-      join(cfg.cwd, ".claude", "skills"),
-      join(cfg.cwd, "skills"),
-      join(cfg.dataDir, "skills"),
-      join(homedir(), ".aemeath", "skills"),
-    ];
-    const skills = discoverSkills(dirs);
+    const skills = discoverSkills(skillSearchDirs(cfg, { bundled: bundledSkillsDir() }));
     return {
       ok: true,
       detail: skills.length
@@ -995,14 +1019,7 @@ ipcMain.handle("agent:testConnection", async (_e, rawPatch?: unknown) => {
 });
 
 ipcMain.handle("agent:skills", async () => {
-  const dirs = [
-    join(cfg.cwd, ".aemeath", "skills"),
-    join(cfg.cwd, ".claude", "skills"),
-    join(cfg.cwd, "skills"),
-    join(cfg.dataDir, "skills"),
-    join(homedir(), ".aemeath", "skills"),
-    join(homedir(), ".claude", "skills"),
-  ];
+  const dirs = skillSearchDirs(cfg, { bundled: bundledSkillsDir() });
   return discoverSkills(dirs).map((s) => ({
     name: s.name,
     description: s.description,
@@ -1168,6 +1185,7 @@ ipcMain.handle("agent:send", async (_e, prompt: unknown) => {
       // the agent may have changed it mid-run via enter/exit_plan_mode.
       checkpoints,
       usageTracker,
+      bundledSkillsDir: bundledSkillsDir(),
     });
   } catch (err) {
     send({ type: "error", runId: "desktop", message: err instanceof Error ? err.message : String(err) });

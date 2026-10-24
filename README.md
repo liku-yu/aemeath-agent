@@ -596,7 +596,70 @@ node --import tsx packages/core/src/test/e2e.ts "创建 hello.txt 再读回来"
 
 ---
 
-## 打包
+## 打包成 .exe
+
+```bash
+npm install
+npm run desktop:dist       # 产物在 packages/desktop/release/
+```
+
+产物是一个安装包：
+
+```
+packages/desktop/release/Aemeath Setup 0.1.0.exe      100 MB
+```
+
+双击 → 一键装好并自动启动，之后从桌面/开始菜单的「爱弥斯」进入。
+装到当前用户目录（`%LOCALAPPDATA%\Programs\Aemeath`），**不需要管理员权限**，
+在「应用和功能」里可以正常卸载。
+
+安装后占磁盘约 **312 MB**，启动约 **0.3 秒**。
+
+> **为什么不用绿色版（单文件免安装）**：portable 格式每次启动都要把 312 MB
+> 解压到临时目录，实测启动 **4.9 秒**，是安装后的 16 倍；临时目录还会不断累积。
+> 除非要放 U 盘到处跑，否则不建议。
+> 想要的话把 `build.win.target` 改回 `["portable"]` 重新打包即可。
+
+**首次启动会自动创建配置**，位置在 `~/.aemeath/`：
+
+```
+~/.aemeath/
+├── config.json        ← 自动生成，可直接编辑
+├── credentials.json   ← 保存 Key 后才出现（加密）
+├── sessions/          会话记录
+├── checkpoints/       撤销用的快照
+└── logs/              主进程日志
+```
+
+默认配置指向 DeepSeek（`deepseek-chat` / `api.deepseek.com`），权限是
+「写文件 ask / 执行命令 ask」。只需要在设置里粘一个 Key 就能开始用。
+
+卸载**不会**删除 `~/.aemeath`（会话和 Key 保留），要彻底清掉手动删这个目录。
+
+### 人设随包一起走
+
+`skills/` 会被打进 `resources/skills`，所以 exe 里自带爱弥斯的人设，
+不依赖用户的工作目录。启动后诊断页应显示：
+
+```
+Skills   1 个：aemeath
+```
+
+技能搜索顺序（先命中先用）：
+
+```
+<工作目录>/.aemeath/skills → <工作目录>/skills → <数据目录>/skills
+→ 安装包内的 resources/skills → ~/.aemeath/skills → …
+```
+
+你自己的工作目录或 `~/.aemeath/skills` 里的同名技能会覆盖包内版本 ——
+想换人设不必重新打包。
+
+### 这个包没有代码签名
+
+`electron-builder` 用了默认图标和未签名构建，Windows SmartScreen 会提示
+"未知发布者"。自己用没问题；要分发给别人就需要代码签名证书。
+
 
 ```bash
 npm run desktop:build       # 生成 Windows NSIS/portable（在 release/）

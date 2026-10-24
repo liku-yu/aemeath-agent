@@ -14,10 +14,9 @@ import { ToolRegistry } from "../tools/registry.js";
 import { PermissionPolicy, suggestRule } from "../permissions/policy.js";
 import { streamComplete } from "../llm/factory.js";
 import { buildSystemPrompt } from "../persona/persona.js";
-import { discoverSkills, skillsIndex, useSkillTool } from "../skills/skills.js";
+import { discoverSkills, skillSearchDirs, skillsIndex, useSkillTool } from "../skills/skills.js";
 import { dataPaths } from "../config/schema.js";
 import { join } from "node:path";
-import { homedir } from "node:os";
 import { existsSync, readFileSync } from "node:fs";
 import { safeResolve } from "../tools/registry.js";
 import { PLAN_MODE_STATE_KEY } from "../tools/builtin/plan.js";
@@ -41,6 +40,11 @@ export interface RunOptions {
   checkpoints?: import("../memory/checkpoint.js").CheckpointStore;
   /** Optional local usage tracker; when present every LLM call is recorded. */
   usageTracker?: import("../memory/usage.js").UsageTracker;
+  /**
+   * Skills shipped with a packaged build (electron-builder extraResources).
+   * The host passes this; the core has no idea it is running inside Electron.
+   */
+  bundledSkillsDir?: string;
 }
 
 /** Default ceiling for a single tool call. */
@@ -199,17 +203,9 @@ export class AgentRunner {
     const perms = new Map<string, PermissionDecision>();
     const ctx = this.makeContext(runId, opts, perms);
 
-    // Skills: standard agent-skill directories (plus legacy locations).
-    const skillDirs = [
-      join(this.cfg.cwd, ".aemeath", "skills"),
-      join(this.cfg.cwd, ".claude", "skills"),
-      join(this.cfg.cwd, "skills"),
-      join(this.cfg.dataDir, "skills"),
-      join(homedir(), ".aemeath", "skills"),
-      join(homedir(), ".claude", "skills"),
-      join(homedir(), ".config", "agent", "skills"),
-    ];
-    const skills = discoverSkills(skillDirs);
+    const skills = discoverSkills(
+      skillSearchDirs(this.cfg, { bundled: opts.bundledSkillsDir }),
+    );
     if (skills.length && !opts.tools.has("use_skill")) {
       opts.tools.register(useSkillTool(skills));
     }

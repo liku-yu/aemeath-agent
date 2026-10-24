@@ -651,7 +651,7 @@ w.webContents.once("did-finish-load", async () => {
             ? {
                 ok: probe.health.ok,
                 failed: probe.health.failed,
-                checks: probe.health.checks.map((c: any) => `${c.ok ? "ok" : "NO"}:${c.name}`),
+                checks: probe.health.checks.map((c: any) => `${c.ok ? "ok" : "NO"}:${c.name}=${c.detail}`),
               }
             : null,
           model: probe.status?.model,

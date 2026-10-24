@@ -10,7 +10,7 @@
     "build": "node scripts/build.mjs",
     "start": "node scripts/launch.mjs",
     "dev": "node scripts/launch.mjs --dev",
-    "dist": "node scripts/build.mjs && electron-builder"
+    "dist": "node scripts/build.mjs && node scripts/pack.mjs"
   },
   "dependencies": {
     "@aemeath/core": "0.1.0"
@@ -32,8 +32,7 @@
     },
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ]
     },
     "linux": {
@@ -47,6 +46,27 @@
       "target": [
         "dmg"
       ]
+    },
+    "extraResources": [
+      {
+        "from": "../../skills",
+        "to": "skills"
+      }
+    ],
+    "electronLanguages": [
+      "zh-CN",
+      "en-US"
+    ],
+    "compression": "maximum",
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "爱弥斯",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     }
   }
 }

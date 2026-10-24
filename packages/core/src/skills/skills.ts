@@ -1,4 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { basename, join } from "node:path";
 import type { Tool } from "../types.js";
 
@@ -65,6 +66,36 @@ export function parseFrontmatter(text: string): { meta: Record<string, string>; 
   }
   flush();
   return { meta, body: text.slice(m[0].length) };
+}
+
+/**
+ * Where skills are looked for, in priority order (first match wins per name).
+ *
+ * Kept in one function because this list had been copied into three call sites
+ * and they had already drifted apart.
+ *
+ * `bundled` is the directory shipped next to a packaged build. It ranks above
+ * the home directory on purpose: a stale copy in `~/.aemeath/skills` used to win
+ * over the copy bundled with the app, so the persona drifted between the two and
+ * neither was authoritative.
+ */
+export function skillSearchDirs(
+  cfg: { cwd: string; dataDir: string },
+  opts: { bundled?: string } = {},
+): string[] {
+  const dirs = [
+    join(cfg.cwd, ".aemeath", "skills"),
+    join(cfg.cwd, ".claude", "skills"),
+    join(cfg.cwd, "skills"),
+    join(cfg.dataDir, "skills"),
+  ];
+  if (opts.bundled) dirs.push(opts.bundled);
+  dirs.push(
+    join(homedir(), ".aemeath", "skills"),
+    join(homedir(), ".claude", "skills"),
+    join(homedir(), ".config", "agent", "skills"),
+  );
+  return dirs;
 }
 
 /** Discover skills in the given directories (first match wins per name). */

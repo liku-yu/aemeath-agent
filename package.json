@@ -15,7 +15,8 @@
     "cli": "node packages/core/dist/cli.js",
     "desktop": "node packages/desktop/scripts/launch.mjs",
     "desktop:build": "npm run build --workspace @aemeath/desktop",
-    "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p packages/desktop/tsconfig.json --noEmit"
+    "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p packages/desktop/tsconfig.json --noEmit",
+    "desktop:dist": "npm run dist --workspace @aemeath/desktop"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
