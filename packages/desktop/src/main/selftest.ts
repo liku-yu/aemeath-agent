@@ -59,6 +59,20 @@ w.webContents.once("did-finish-load", async () => {
        })`,
     );
     /*
+     * CSP 的硬约束：`script-src 'self'` 不带 'unsafe-eval'，所以 eval / new Function
+     * 必须被禁止。这不是可选项 —— 它决定了能不能用 Alpine.js、petite-vue、
+     * Vue 运行时编译版这类靠 new Function 求值表达式的库。
+     */
+    const cspDom = await w.webContents.executeJavaScript(
+      `(() => {
+         const out = { evalBlocked: false, fnBlocked: false };
+         try { (0, eval)("1 + 1"); } catch { out.evalBlocked = true; }
+         try { new Function("return 1")(); } catch { out.fnBlocked = true; }
+         return out;
+       })()`,
+    );
+
+    /*
      * A run that ends while a permission dialog is open must tear it down.
      * Previously the dialog stayed on screen and its buttons talked to a run
      * that no longer existed.
@@ -476,6 +490,8 @@ w.webContents.once("did-finish-load", async () => {
     };
     expectJump(jumpDom);
     expect(hooksReady === true, "测试钩子应在 selftest 模式下装好");
+    expect(cspDom.evalBlocked === true, "CSP 应禁止 eval（依赖 new Function 的 UI 库因此不可用）");
+    expect(cspDom.fnBlocked === true, "CSP 应禁止 new Function");
     expect(endRunDom.permHidden === true, "任务结束后权限弹窗应收起");
     expect(endRunDom.toolCardsCleared === true, "任务结束后工具卡片表应清空");
     expect(endRunDom.ctxMeterPresent === true, "上下文仪表应存在");
@@ -617,6 +633,7 @@ w.webContents.once("did-finish-load", async () => {
           ok: !!probe.hasApi && keyFailures.length === 0 && hooksReady === true,
           keyFailures,
           endRunDom,
+          cspDom,
           guardDom,
           keyDom,
           jumpDom,
