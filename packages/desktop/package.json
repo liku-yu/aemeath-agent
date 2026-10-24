@@ -33,7 +33,8 @@
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "icon": "assets/icon.ico"
     },
     "linux": {
       "target": [
@@ -67,7 +68,9 @@
       "shortcutName": "爱弥斯",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
-      "differentialPackage": false
+      "differentialPackage": false,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
     }
   }
 }
