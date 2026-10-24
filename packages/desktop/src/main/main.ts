@@ -326,13 +326,58 @@ function startBalancePolling() {
   balanceTimer = setInterval(() => refreshBalance().catch(() => {}), 10 * 60_000);
 }
 
-function createWindow() {
+/** Set once at startup; read when loading the renderer. */
+let gpuUnavailable = false;
+
+/**
+ * Is Chromium compositing in software?
+ *
+ * Three real cases produce this: no usable GPU driver, a remote-desktop session,
+ * and some VMs. It matters because the UI is built on blur, and blur without GPU
+ * acceleration is not slower by degrees — it took 6.1 s to first paint here.
+ *
+ * Asked *before* the window is created so the renderer can skip painting glass
+ * altogether rather than repainting afterwards. Failures are treated as "has a
+ * GPU": wrongly disabling the glass is a cosmetic regression, wrongly enabling it
+ * makes the app look hung.
+ */
+async function softwareCompositing(): Promise<boolean> {
+  try {
+    // getGPUInfo waits for the GPU process to report; getGPUFeatureStatus alone
+    // can still be empty this early. Race it so a hung GPU process cannot block
+    // startup.
+    await Promise.race([app.getGPUInfo("basic"), new Promise((r) => setTimeout(r, 1000))]);
+  } catch {
+    /* older builds: fall through to whatever the status says */
+  }
+  try {
+    const status = app.getGPUFeatureStatus() as unknown as Record<string, string>;
+    return /software|unavailable/.test(status.gpu_compositing ?? "");
+  } catch {
+    return false;
+  }
+}
+
+async function createWindow() {
+  const noGpu = gpuUnavailable;
   win = new BrowserWindow({
     width: 1180,
     height: 780,
     minWidth: 900,
     minHeight: 600,
-    backgroundColor: "#140f17",
+    /*
+     * Match the page, not the OS.
+     *
+     * `backgroundColor` is what shows during resize and behind the rounded
+     * corners; the default and the old value both read as a black frame around
+     * a purple window. Keep it equal to --bg-deep in tokens.css.
+     *
+     * `titleBarStyle: "hidden"` drops the native title bar so the app can draw
+     * its own — the OS one is near-black and cannot be themed on Windows. The
+     * window controls are reimplemented in the renderer (see .win-controls).
+     */
+    backgroundColor: "#0f0b1c",
+    titleBarStyle: "hidden",
     title: "爱弥斯 · Aemeath Agent",
     autoHideMenuBar: true,
     show: true,
@@ -349,7 +394,45 @@ function createWindow() {
     },
   });
 
-  win.loadFile(join(__dirname, "..", "renderer", "index.html"));
+  /*
+   * Renderer failures were invisible: a broken app.js left a blank window and
+   * nothing in the log. Forward load failures and console errors to host.log so
+   * "it does not start" is diagnosable instead of guesswork.
+   */
+  win.webContents.on("did-fail-load", (_e, code, desc, url) => {
+    logHost("error", "renderer load failed", { code, desc, url });
+  });
+  win.webContents.on("console-message", (...args: any[]) => {
+    // Electron 45 passes (event, details); older builds passed positional args.
+    const details = typeof args[1] === "object" && args[1] ? args[1] : { level: args[1], message: args[2] };
+    const level = details.level;
+    const isError = level === "error" || level === 3;
+    if (!isError) return;
+    logHost("error", "renderer console", { message: String(details.message ?? "").slice(0, 500) });
+  });
+
+  /*
+   * Renderer failures used to be invisible: a broken app.js left a blank window
+   * and nothing in the log. Forward load failures and console errors so "it does
+   * not start" is diagnosable instead of guesswork.
+   */
+  win.webContents.on("did-fail-load", (_e, code, desc, url) => {
+    logHost("error", "renderer load failed", { code, desc, url });
+  });
+  win.webContents.on("render-process-gone", (_e, details) => {
+    logHost("error", "renderer process gone", { reason: details?.reason });
+  });
+  win.webContents.on("console-message", (...args: any[]) => {
+    // Electron 45 passes (event, details); older builds passed positional args.
+    const details = typeof args[1] === "object" && args[1] ? args[1] : { level: args[1], message: args[2] };
+    const level = details.level;
+    if (!(level === "error" || level === 3)) return;
+    logHost("error", "renderer console", { message: String(details.message ?? "").slice(0, 500) });
+  });
+
+  win.loadFile(join(__dirname, "..", "renderer", "index.html"), {
+    query: noGpu ? { gpu: "off" } : {},
+  });
   if (isDev) win.webContents.openDevTools({ mode: "detach" });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -1065,6 +1148,17 @@ async function openExternalSafely(url: unknown): Promise<{ ok: boolean; error?: 
 
 ipcMain.handle("agent:openExternal", async (_e, url: unknown) => openExternalSafely(url));
 
+/* Window controls for the custom title bar. */
+ipcMain.handle("agent:winMinimize", () => win?.minimize());
+ipcMain.handle("agent:winToggleMaximize", () => {
+  if (!win) return { maximized: false };
+  if (win.isMaximized()) win.unmaximize();
+  else win.maximize();
+  return { maximized: win.isMaximized() };
+});
+ipcMain.handle("agent:winClose", () => win?.close());
+ipcMain.handle("agent:winIsMaximized", () => win?.isMaximized() ?? false);
+
 ipcMain.handle("agent:openDataDir", async () => {
   await shell.openPath(cfg.dataDir);
   return { ok: true };
@@ -1221,7 +1315,9 @@ app.whenReady().then(async () => {
   }
 
   // Show the window immediately; initialise the agent in the background.
-  createWindow();
+  gpuUnavailable = await softwareCompositing();
+  logHost("info", "compositing", { software: gpuUnavailable });
+  await createWindow();
   ensureAgent().catch((err) =>
     send({ type: "error", runId: "desktop", message: `初始化失败: ${err instanceof Error ? err.message : err}` }),
   );
@@ -1238,7 +1334,7 @@ app.whenReady().then(async () => {
   }
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) void createWindow();
   });
 });
 

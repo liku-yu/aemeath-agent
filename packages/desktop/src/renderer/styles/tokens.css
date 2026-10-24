@@ -24,8 +24,6 @@
   --bg-bubble-user: #3b2d54;
   --bg-bubble-user-2: #2c2142;
   --bg-danger-soft: rgba(255, 90, 120, 0.14);
-  --bg-success-soft: rgba(80, 220, 140, 0.13);
-  --bg-warn-soft: rgba(240, 200, 90, 0.13);
 
   /* ---------- glass ---------- */
   /* Alpha overlays, not solid colours: one recipe works over any backdrop. */
@@ -50,8 +48,6 @@
     rgba(255, 255, 255, 0) 58%
   );
   --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  --glass-lo: inset 0 -1px 0 rgba(0, 0, 0, 0.22);
-  --glass-shadow: 0 16px 46px rgba(3, 0, 10, 0.48);
 
   /* ---------- text ---------- */
   --text: #f7f3ff;
@@ -80,7 +76,6 @@
   --orange: #e3b341;
 
   --pink-wash: rgba(255, 168, 213, 0.12);
-  --pink-wash-2: rgba(255, 168, 213, 0.20);
   --focus-ring: 0 0 0 3px rgba(255, 168, 213, 0.22);
 
   /* ---------- chrome ---------- */
@@ -94,10 +89,8 @@
   --r-md: 12px;
   --r-lg: 16px;
   --r-xl: 22px;
-  --radius: 12px;                /* legacy alias, still referenced */
 
   /* ---------- spacing ---------- */
-  --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
   --s-4: 16px;
@@ -119,6 +112,22 @@
  * it keeps text readable for anyone who needs it. Glass is decoration; nothing
  * may become unreadable because of it.
  */
+/*
+ * Software compositing. Same treatment as reduced-transparency, but decided by
+ * the GPU process rather than by a user preference — blur there is not a taste
+ * question, it is a several-second-per-frame bug. boot.js sets this class from
+ * the first frame, so the glass is never painted once by accident.
+ */
+html.no-gpu {
+  --glass-1: #1e1730;
+  --glass-2: #271e3c;
+  --glass-3: #332749;
+  --glass-blur: none;
+  --glass-blur-soft: none;
+  --glass-hi: none;
+  --overlay-bg: rgba(9, 5, 18, 0.88);
+}
+
 @media (prefers-reduced-transparency: reduce) {
   :root {
     --glass-1: #1e1730;
@@ -127,7 +136,6 @@
     --glass-blur: none;
     --glass-blur-soft: none;
     --glass-hi: none;
-    --glass-lo: none;
     --overlay-bg: rgba(9, 5, 18, 0.88);
   }
 }

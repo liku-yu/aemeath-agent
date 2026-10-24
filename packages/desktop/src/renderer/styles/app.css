@@ -118,17 +118,63 @@
 
 /* Chat area + embedded pet share this stage */
 #stage-area { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/*
+ * The window has no native title bar (titleBarStyle: "hidden"), so the top strip
+ * is it. Anything inside it must opt back out of dragging.
+ */
 #topbar {
-  height: 48px; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 18px;
+  height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 0 0 18px;
   background: var(--glass-sheen), var(--glass-1);
   backdrop-filter: var(--glass-blur-soft);
   -webkit-backdrop-filter: var(--glass-blur-soft);
   box-shadow: var(--glass-hi);
   border-bottom: 1px solid var(--glass-border);
+  -webkit-app-region: drag;
+  user-select: none;
 }
-.cwd { color: var(--muted); font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.topbar-right { display: flex; align-items: center; gap: 8px; }
+#topbar .cwd,
+#topbar .topbar-right { -webkit-app-region: drag; }
+#topbar button,
+#topbar .pill { -webkit-app-region: no-drag; }
+#topbar .topbar-right { padding-right: 10px; }
+
+/* Sidebar header is part of the same strip. */
+.side-top { -webkit-app-region: drag; }
+.side-top button,
+.side-top input,
+.side-top .avatar { -webkit-app-region: no-drag; }
+
+/* Window controls, drawn to match the theme instead of the OS default. */
+.win-controls {
+  display: flex; align-self: stretch; margin-left: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.win-btn {
+  width: 46px; border: 0; background: transparent;
+  color: var(--muted); font-size: 12px; line-height: 1;
+  display: grid; place-items: center; cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.win-btn:hover { background: var(--glass-3); color: var(--text); }
+.win-btn:focus-visible { outline: 2px solid var(--pink-2); outline-offset: -2px; }
+/* Windows uses this exact red for the close button; matching it is the one
+   place where copying the OS is the right call. */
+.win-btn.close:hover { background: #e81123; color: #fff; }
+.cwd { color: var(--muted); font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; min-width: 0; }
+/*
+ * The window controls take 138px out of the right end of this row, which used to
+ * be free. Without these two rules the buttons keep their width, wrap their
+ * labels onto two lines ("撤/销", "停/止") and the bar looks broken at 1180px.
+ * Shrink the provider picker instead — it already ellipsises.
+ */
+.topbar-right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; min-width: 0; flex-wrap: nowrap; }
+.topbar-right > .btn,
+.topbar-right > .pill { flex: 0 0 auto; white-space: nowrap; }
+.topbar-right > .picker { flex: 0 1 auto; min-width: 120px; }
+.topbar-right > .picker .pk-provider,
+.topbar-right > .picker .pk-model { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
 .pill {
   background: var(--glass-sheen), var(--glass-2);
   border: 1px solid var(--glass-border); color: var(--pink);
@@ -257,7 +303,7 @@
 .pet-badge {
   background: rgba(30, 18, 36, 0.92);
   border: 1px solid var(--border);
-  color: #f2d9ec;
+  color: var(--text);
   font-size: 10px;
   padding: 2px 7px;
   border-radius: 999px;
@@ -278,7 +324,7 @@
   max-width: 190px;
   background: rgba(38, 23, 44, 0.96);
   border: 1px solid var(--border-hover);
-  color: #fbe7f5;
+  color: var(--text-strong);
   font-size: 11.5px;
   line-height: 1.45;
   padding: 6px 10px;
@@ -390,7 +436,7 @@ label input::placeholder { color: var(--muted-2); }
 
 .mood-dot {
   position: absolute; right: 3px; bottom: 3px; width: 9px; height: 9px; border-radius: 50%;
-  background: var(--muted); border: 2px solid #1b1220; transition: background 0.3s;
+  background: var(--muted); border: 2px solid var(--bg-deep); transition: background 0.3s;
 }
 #app[data-mood="idle"] .mood-dot { background: var(--green); }
 #app[data-mood="thinking"] .mood-dot { background: var(--blue); }

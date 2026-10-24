@@ -854,6 +854,9 @@ function askConfirm(opts = {}) {
     const overlay = $("confirm-overlay");
     $("confirm-title").textContent = opts.title || "确认操作";
     $("confirm-body").textContent = opts.body || "";
+    // A one-line instruction should not look like a filled text field; the box is
+    // for dialogs that show a command or a detail the user has to read carefully.
+    $("confirm-body").classList.toggle("plain", Boolean(opts.bodyPlain));
     const note = $("confirm-note");
     if (opts.note) {
       note.textContent = opts.note;
@@ -1805,6 +1808,7 @@ async function createProviderFromTemplate(template) {
   const name = await askConfirm({
     title: template ? `从模板新建：${template.label}` : "新建自定义供应商",
     body: "先起个名字，地址和 API Key 在右边填。",
+    bodyPlain: true,
     input: {
       label: "名称",
       value: template ? template.label : "",
@@ -2494,6 +2498,33 @@ function beginKeyReplace() {
   $("cfg-apiKey").value = "";
   $("cfg-apiKey").focus();
 }
+
+/* --------------------------- custom title bar ---------------------------- */
+
+$("win-min").addEventListener("click", () => window.aemeath.winMinimize());
+$("win-close").addEventListener("click", () => window.aemeath.winClose());
+$("win-max").addEventListener("click", async () => {
+  const r = await window.aemeath.winToggleMaximize();
+  syncMaximizeGlyph(r?.maximized);
+});
+
+/** The maximise button shows the restore glyph while the window is maximised. */
+function syncMaximizeGlyph(maximized) {
+  const btn = $("win-max");
+  if (!btn) return;
+  btn.textContent = maximized ? "❐" : "▢";
+  btn.title = maximized ? "还原" : "最大化";
+  btn.setAttribute("aria-label", btn.title);
+}
+
+// Double-clicking the title bar area toggles maximise, like a native window.
+$("topbar").addEventListener("dblclick", async (e) => {
+  if (e.target.closest("button, .pill")) return; // controls handle themselves
+  const r = await window.aemeath.winToggleMaximize();
+  syncMaximizeGlyph(r?.maximized);
+});
+
+window.aemeath.winIsMaximized().then(syncMaximizeGlyph).catch(() => {});
 
 $("cfg-key-replace").addEventListener("click", beginKeyReplace);
 

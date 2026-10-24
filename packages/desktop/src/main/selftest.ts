@@ -41,10 +41,16 @@ export async function runSelfTest(win: BrowserWindow, opts: SelfTestOptions): Pr
 // Verify preload bridge + renderer load, then optionally run a real prompt.
 const w = win;
 const doRoundTrip = process.argv.includes("--roundtrip");
+/*
+ * The probes deliberately sleep between DOM mutations — they wait out the
+ * debounced saves and the balance cache — which sums to about 14s, and process
+ * start plus page load adds several more without GPU acceleration. The old 20s
+ * budget was tuned on a faster machine and failed here for no product reason.
+ */
 const timeout = setTimeout(() => {
   process.stdout.write("SELFTEST:FAIL timeout\n");
   opts.exit(1);
-}, doRoundTrip ? 150_000 : 20_000);
+}, doRoundTrip ? 180_000 : 45_000);
 w.webContents.once("did-finish-load", async () => {
   try {
     // The renderer installs its test hooks asynchronously (it asks main

@@ -33,6 +33,13 @@ body::before {
   filter: blur(72px) saturate(115%);
 }
 
+/*
+ * Without a GPU the blur above is the single most expensive thing on screen: it
+ * is a full-viewport layer, so every frame pays for it. The radial gradients are
+ * already smooth, so dropping the filter costs little visually.
+ */
+html.no-gpu body::before { filter: none; }
+
 /* Vignette: pulls the corners back down so the glass has an edge to sit against. */
 body::after {
   content: "";

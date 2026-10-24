@@ -10,6 +10,8 @@
     -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'" />
     <title>爱弥斯 · Aemeath Agent</title>
+    <!-- Must run before the stylesheets: it decides whether to paint glass at all. -->
+    <script src="boot.js"></script>
     <!-- Order matters: tokens first, utilities last (its .hidden must win). -->
     <link rel="stylesheet" href="styles/tokens.css" />
     <link rel="stylesheet" href="styles/base.css" />
@@ -91,6 +93,12 @@
             <button class="btn ghost small toggle" id="btn-plan" title="计划模式：只读调研，不改动文件">📋 计划</button>
             <button class="btn ghost small" id="btn-undo" title="撤销最近一次文件改动">↶ 撤销</button>
             <button class="btn ghost small" id="btn-stop" title="中止当前运行">■ 停止</button>
+          </div>
+          <!-- Custom title bar controls: the native bar cannot be themed. -->
+          <div class="win-controls">
+            <button class="win-btn" id="win-min" type="button" title="最小化" aria-label="最小化">─</button>
+            <button class="win-btn" id="win-max" type="button" title="最大化" aria-label="最大化">▢</button>
+            <button class="win-btn close" id="win-close" type="button" title="关闭" aria-label="关闭">✕</button>
           </div>
         </header>
 

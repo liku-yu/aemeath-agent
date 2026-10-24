@@ -207,6 +207,10 @@ body.hide-thinking .msg.thinking { display: none; }
   padding: 10px 12px; font-size: 13px; color: var(--text); line-height: 1.6;
   word-break: break-word;
 }
+/* Instruction line: reads as a caption, not as an input. */
+.confirm-body.plain {
+  background: transparent; border: 0; padding: 0; color: var(--muted);
+}
 .confirm-note {
   margin-top: 8px; font-size: 11.5px; color: var(--muted);
   line-height: 1.6; white-space: pre-wrap;

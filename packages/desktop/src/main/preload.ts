@@ -68,6 +68,10 @@ const api = {
   clearAllowList: () => ipcRenderer.invoke("agent:clearAllowList"),
   openDataDir: () => ipcRenderer.invoke("agent:openDataDir"),
   openExternal: (url: string) => ipcRenderer.invoke("agent:openExternal", url),
+  winMinimize: () => ipcRenderer.invoke("agent:winMinimize"),
+  winToggleMaximize: () => ipcRenderer.invoke("agent:winToggleMaximize"),
+  winClose: () => ipcRenderer.invoke("agent:winClose"),
+  winIsMaximized: () => ipcRenderer.invoke("agent:winIsMaximized"),
 };
 
 contextBridge.exposeInMainWorld("aemeath", api);
