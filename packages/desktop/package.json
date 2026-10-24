@@ -10,7 +10,8 @@
     "build": "node scripts/build.mjs",
     "start": "node scripts/launch.mjs",
     "dev": "node scripts/launch.mjs --dev",
-    "dist": "node scripts/build.mjs && node scripts/pack.mjs"
+    "dist": "node scripts/build.mjs && node scripts/pack.mjs",
+    "icon": "node scripts/make-icon.mjs"
   },
   "dependencies": {
     "@aemeath/core": "0.1.0"

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Aemeath app icon — source of truth.
+
+  Tile: the same treatment as the sidebar avatar (styles/app.css `.avatar`):
+  rounded square, 14/52 corner ratio, linear-gradient(160deg, #3a2440, #241629).
+
+  Glyph: lucide "sparkle" (ISC, https://lucide.dev). Kept as the original 24x24
+  path and scaled by transform, so bumping lucide only means re-pasting the `d`.
+  Filled rather than stroked: at 16px a 2px stroke turns to mush, a solid
+  four-point star still reads.
+
+  Regenerate the .ico with: npm run icon
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="1" x2="0.342" y2="0">
+      <stop offset="0" stop-color="#3a2440" />
+      <stop offset="1" stop-color="#241629" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="138" ry="138" fill="url(#tile)" />
+  <!-- 24x24 glyph scaled to 64% of the tile and centred. -->
+  <g transform="translate(92.2 92.2) scale(13.653)" fill="#ffa8d5">
+    <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
+  </g>
+</svg>
