@@ -310,7 +310,11 @@ npm install
 npm run desktop:dist       # 产物在 packages/desktop/release/
 ```
 
-产出 `Aemeath Setup 0.1.0.exe`（约 100 MB）：双击一键装好并自动启动，
+`release/` 里只留安装包：electron-builder 中间的 `win-unpacked/` 解包目录、
+`.blockmap`（差分更新用，没有更新器就没用）和 `builder-debug.yml` 在打包成功后
+会被删掉。想留住解包目录做测试，加 `AEMEATH_KEEP_UNPACKED=1`。
+
+产出 `Aemeath Setup 0.1.0.exe`（约 90 MB）：双击一键装好并自动启动，
 装到当前用户目录（`%LOCALAPPDATA%\Programs\Aemeath`），**不需要管理员权限**，
 「应用和功能」里可正常卸载。装后占盘 312 MB，启动约 0.3 秒。
 卸载**保留** `~/.aemeath`（会话和 Key 不丢）。
