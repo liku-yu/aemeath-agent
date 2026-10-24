@@ -180,7 +180,13 @@ export function defaultConfig(): AemeathConfig {
     apiMode: "chat",
     model: process.env.AEMEATH_MODEL ?? "deepseek-chat",
     baseUrl: process.env.AEMEATH_BASE_URL ?? defaultBaseUrl,
-    apiKey: process.env.AEMEATH_API_KEY ?? process.env.ANTHROPIC_API_KEY ?? "",
+    /*
+     * Empty on purpose. Env-var keys are resolved in loadConfig() where the
+     * precedence is explicit and testable; reading them here made an ambient
+     * ANTHROPIC_API_KEY look like a "configured" key before anything was even
+     * loaded, which silently outranked the key the user saved in the app.
+     */
+    apiKey: "",
     maxTokens: 8192,
     temperature: 0.3,
     maxSteps: 40,

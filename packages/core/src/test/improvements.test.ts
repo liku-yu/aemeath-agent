@@ -7,7 +7,8 @@ import { PermissionPolicy, ruleMatches, suggestRule } from "../permissions/polic
 import { providerLogoFor } from "../config/schema.js";
 import { maskSecret } from "../config/credentials.js";
 import { endpointPathFor, endpointUrlFor } from "../llm/base.js";
-import { assertNoSecretsInConfig } from "../config/load.js";
+import { assertNoSecretsInConfig, loadConfig, credentialScope } from "../config/load.js";
+import { CredentialStore } from "../config/credentials.js";
 import { fakeKey } from "./fake.js";
 import { fetchBalance } from "../llm/balance.js";
 import { createServer } from "node:http";
@@ -657,5 +658,81 @@ test("providerLogoFor always returns a single glyph", () => {
     const glyph = providerLogoFor(url, "");
     assert.ok(glyph.length > 0, `空图标来自 ${JSON.stringify(url)}`);
     assert.ok(glyph.length <= 4, `图标过长 ${JSON.stringify(glyph)} 来自 ${JSON.stringify(url)}`);
+  }
+});
+
+/* ------------------------------------------------------------------ *
+ * 15. Key precedence: what you saved in the app beats ambient env vars
+ * ------------------------------------------------------------------ */
+
+test("the saved credential outranks a vendor env var", () => {
+  const dir = mkdtempSync(join(tmpdir(), "aemeath-prec-"));
+  const savedEnv = process.env.DEEPSEEK_API_KEY;
+  try {
+    const baseUrl = "https://api.deepseek.com";
+    const cfg0 = { ...loadConfig({ cwd: dir, overrides: { dataDir: dir } }), provider: "deepseek", baseUrl };
+
+    // The user saves a key for this endpoint through the app.
+    const saved = fakeKey("saved-in-app");
+    CredentialStore.open(dir).set(credentialScope(cfg0), saved);
+
+    // ...and happens to have a different vendor key exported in the shell.
+    process.env.DEEPSEEK_API_KEY = fakeKey("from-shell");
+
+    const cfg = loadConfig({
+      cwd: dir,
+      overrides: { dataDir: dir, provider: "deepseek", baseUrl },
+    });
+
+    assert.equal(cfg.apiKey, saved, "设置里保存的 Key 必须压过环境变量");
+    assert.notEqual(cfg.apiKey, fakeKey("from-shell"));
+  } finally {
+    if (savedEnv === undefined) delete process.env.DEEPSEEK_API_KEY;
+    else process.env.DEEPSEEK_API_KEY = savedEnv;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("AEMEATH_API_KEY is still the deliberate per-run override", () => {
+  const dir = mkdtempSync(join(tmpdir(), "aemeath-prec2-"));
+  const savedEnv = process.env.AEMEATH_API_KEY;
+  try {
+    const baseUrl = "https://api.deepseek.com";
+    const cfg0 = { ...loadConfig({ cwd: dir, overrides: { dataDir: dir } }), provider: "deepseek", baseUrl };
+    CredentialStore.open(dir).set(credentialScope(cfg0), fakeKey("saved-in-app"));
+
+    process.env.AEMEATH_API_KEY = fakeKey("explicit-override");
+
+    const cfg = loadConfig({
+      cwd: dir,
+      overrides: { dataDir: dir, provider: "deepseek", baseUrl },
+    });
+    assert.equal(cfg.apiKey, fakeKey("explicit-override"), "AEMEATH_API_KEY 应可用于临时覆盖");
+  } finally {
+    if (savedEnv === undefined) delete process.env.AEMEATH_API_KEY;
+    else process.env.AEMEATH_API_KEY = savedEnv;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("with nothing saved, the vendor env var is still picked up", () => {
+  const dir = mkdtempSync(join(tmpdir(), "aemeath-prec3-"));
+  const savedEnv = process.env.DEEPSEEK_API_KEY;
+  const savedExplicit = process.env.AEMEATH_API_KEY;
+  try {
+    process.env.DEEPSEEK_API_KEY = fakeKey("only-in-shell");
+    delete process.env.AEMEATH_API_KEY;
+
+    const cfg = loadConfig({
+      cwd: dir,
+      overrides: { dataDir: dir, provider: "deepseek", baseUrl: "https://api.deepseek.com" },
+    });
+    assert.equal(cfg.apiKey, fakeKey("only-in-shell"), "没有保存过时应回落到厂商变量");
+  } finally {
+    if (savedEnv === undefined) delete process.env.DEEPSEEK_API_KEY;
+    else process.env.DEEPSEEK_API_KEY = savedEnv;
+    if (savedExplicit === undefined) delete process.env.AEMEATH_API_KEY;
+    else process.env.AEMEATH_API_KEY = savedExplicit;
+    rmSync(dir, { recursive: true, force: true });
   }
 });

@@ -127,20 +127,22 @@ export function loadConfig(opts: { cwd?: string; overrides?: Partial<AemeathConf
 
   /*
    * Key resolution, first hit wins:
-   *   1. AEMEATH_API_KEY            — explicit, provider-agnostic
-   *   2. ANTHROPIC_API_KEY          — arrives via defaultConfig()'s apiKey
-   *   3. a vendor env var *whose vendor matches the endpoint* (DEEPSEEK_API_KEY, …)
-   *   4. AEMEATH_ANTHROPIC_API_KEY  — legacy name
-   *   5. the credential store       — the key you saved in the app (falls through
-   *                                   to this only when nothing above supplied one)
+   *   1. an explicit programmatic override (opts.overrides.apiKey)
+   *   2. AEMEATH_API_KEY            — explicit env override ("use this one now")
+   *   3. the credential saved in the app for this endpoint
+   *   4. a legacy plaintext key still sitting in config.json
+   *   5. a vendor env var *whose vendor matches the endpoint* (DEEPSEEK_API_KEY…)
+   *   6. AEMEATH_ANTHROPIC_API_KEY  — legacy name
+   *   7. ANTHROPIC_API_KEY          — ambient
    *
-   * Step 3 is deliberately vendor-matched: blindly using DEEPSEEK_API_KEY for a
-   * self-hosted gateway replaced the user's own key with an unrelated one and
-   * failed auth confusingly.
+   * The saved credential outranks ambient vendor variables on purpose: a
+   * DEEPSEEK_API_KEY that happens to be exported in the shell used to silently
+   * replace whatever the user configured in the app, with no indication.
+   * AEMEATH_API_KEY stays above it as the deliberate per-run escape hatch.
    *
-   * NOTE (order): the store is the *last* fallback, so an ambient vendor key in
-   * the environment outranks a key saved in the app. That is the current
-   * behaviour; see the README's "关于 API Key" for the user-facing description.
+   * Step 5 is vendor-matched: blindly using DEEPSEEK_API_KEY for a self-hosted
+   * gateway replaced the user's own key with an unrelated one and failed auth
+   * confusingly.
    */
   const vendorKeyFor = (baseUrl: string): string | undefined => {
     if (/deepseek/i.test(baseUrl)) return envVal("DEEPSEEK_API_KEY");
@@ -152,12 +154,6 @@ export function loadConfig(opts: { cwd?: string; overrides?: Partial<AemeathConf
     if (/bigmodel|zhipu/i.test(baseUrl)) return envVal("ZHIPU_API_KEY");
     return undefined;
   };
-
-  if (envVal("AEMEATH_API_KEY")) {
-    cfg.apiKey = envVal("AEMEATH_API_KEY")!;
-  } else if (!cfg.apiKey) {
-    cfg.apiKey = vendorKeyFor(cfg.baseUrl) ?? envVal("AEMEATH_ANTHROPIC_API_KEY") ?? "";
-  }
 
   // Convenience for a first run: if the only thing configured is a vendor key
   // and the endpoint is still the untouched default, point at that vendor.
@@ -179,18 +175,37 @@ export function loadConfig(opts: { cwd?: string; overrides?: Partial<AemeathConf
    * that will actually be used (provider + base URL). Looking it up earlier used
    * the pre-override URL, which could hand back another endpoint's key.
    */
+  const overrideKey = opts.overrides?.apiKey;
   if (opts.overrides) cfg = merge(cfg, opts.overrides);
 
   /*
    * Secrets live in the encrypted credential store, never in config.json.
-   * An explicit env key already won above; otherwise hydrate from the store for
-   * this endpoint. A legacy plaintext key still sitting in the config file is
-   * kept working and migrated out on the next save.
+   *
+   * This runs last so the scope (provider + base URL) is final — looking the
+   * credential up earlier used the pre-override endpoint and could hand back
+   * another endpoint's key.
+   *
+   * `cfg.apiKey` at this point can only hold a legacy plaintext key from an old
+   * config.json (migrated out on the next save) or a programmatic override.
    */
-  if (!cfg.apiKey) {
-    const store = CredentialStore.open(cfg.dataDir);
-    cfg.apiKey = store.get(credentialScope(cfg)) ?? "";
-  }
+  const savedKey = (() => {
+    try {
+      return CredentialStore.open(cfg.dataDir).get(credentialScope(cfg));
+    } catch {
+      return null;
+    }
+  })();
+
+  const candidates: Array<string | null | undefined> = [
+    overrideKey, // 1. explicit programmatic override
+    envVal("AEMEATH_API_KEY"), // 2. explicit env override
+    savedKey, // 3. saved in the app for this endpoint
+    cfg.apiKey, // 4. legacy plaintext in config.json
+    vendorKeyFor(cfg.baseUrl), // 5. vendor env, matched to the endpoint
+    envVal("AEMEATH_ANTHROPIC_API_KEY"), // 6. legacy name
+    envVal("ANTHROPIC_API_KEY"), // 7. ambient
+  ];
+  cfg.apiKey = candidates.find((v) => typeof v === "string" && v.trim() !== "") ?? "";
 
   return cfg;
 }

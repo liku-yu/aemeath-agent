@@ -589,16 +589,16 @@ Linux/macOS 打包配置已写在 `packages/desktop/package.json` 的 `build` �
 
 | 顺序 | 来源 | 说明 |
 |---|---|---|
-| 1 | `AEMEATH_API_KEY` | 显式、与供应商无关 |
-| 2 | `ANTHROPIC_API_KEY` | 历史默认名 |
-| 3 | 厂商变量（`DEEPSEEK_API_KEY` / `MOONSHOT_API_KEY` / `OPENROUTER_API_KEY` …） | **只在厂商跟当前 Base URL 对得上时才用** |
-| 4 | `AEMEATH_ANTHROPIC_API_KEY` | 旧名兼容 |
-| 5 | `credentials.json` 里保存的 Key | 你在设置面板里填的那个 |
+| 1 | `AEMEATH_API_KEY` | **显式覆盖** —— 用来临时换一把 Key 跑一次 |
+| 2 | `credentials.json` 里保存的 Key | **你在设置面板里填的那个** |
+| 3 | `config.json` 里残留的明文 Key | 旧版本的遗留，下次保存时会自动搬进加密库 |
+| 4 | 厂商变量（`DEEPSEEK_API_KEY` / `MOONSHOT_API_KEY` / `OPENROUTER_API_KEY` …） | **只在厂商跟当前 Base URL 对得上时才用** |
+| 5 | `AEMEATH_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` | 历史名称 |
 
-> ⚠️ **注意第 5 条排在最后。** 如果你的 shell 里正好设着 `DEEPSEEK_API_KEY`，
-> 它会**盖过**你在设置里保存的 Key，哪怕你用的是别的供应商。想让设置面板里的
-> Key 生效，先把环境变量清掉（`unset DEEPSEEK_API_KEY`）。
-> 项目内的 `.aemeath/.env` 也属于“环境变量”这一层。
+> **你在设置里保存的 Key 优先于厂商环境变量。** 早先的顺序是反的：shell 里如果
+> 恰好导出了 `DEEPSEEK_API_KEY`，它会静默盖掉你亲手配置的那把，而且没有任何提示。
+> 现在只有 `AEMEATH_API_KEY` 能盖过它 —— 那是你主动指定的临时覆盖。
+> 项目内的 `.aemeath/.env` 也属于环境变量这一层。
 
 没有 Key 时它只提示你去配置，不会去别处翻。
 
