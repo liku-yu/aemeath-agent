@@ -9,7 +9,7 @@ import type {
 } from "../types.js";
 import type { AemeathConfig } from "../config/schema.js";
 import type { SessionStore } from "../memory/session.js";
-import { estimateTokens, newId, JsonNoteStore } from "../memory/session.js";
+import { compactionBoundary, estimateTokens, healToolPairs, newId, JsonNoteStore } from "../memory/session.js";
 import { ToolRegistry } from "../tools/registry.js";
 import { PermissionPolicy, suggestRule } from "../permissions/policy.js";
 import { streamComplete } from "../llm/factory.js";
@@ -260,7 +260,14 @@ export class AgentRunner {
       try {
         result = await streamComplete(
           this.cfg,
-          { system, messages: session.getMessages(), tools: opts.tools.schemas(), signal: opts.signal },
+          {
+            system,
+            // Repaired first: a run stopped mid-batch leaves tool_use without
+            // tool_result in the journal, which the provider rejects outright.
+            messages: healToolPairs(session.getMessages()),
+            tools: opts.tools.schemas(),
+            signal: opts.signal,
+          },
           (segment) => {
             // Emit the ordered segment, plus a convenience alias so simple
             // renderers that only understand text/thinking keep working.
@@ -308,8 +315,25 @@ export class AgentRunner {
 
       // ---- Execute each tool, collect tool_results in order ----
       const results: ContentBlock[] = [];
-      for (const call of toolUses) {
-        if (opts.signal?.aborted) break;
+      for (let i = 0; i < toolUses.length; i++) {
+        const call = toolUses[i]!;
+        if (opts.signal?.aborted) {
+          /*
+           * Answer the calls we never ran. Skipping them leaves the assistant
+           * message with tool_use blocks nothing responds to, and both providers
+           * reject that — the session would be unusable from then on.
+           */
+          for (const skipped of toolUses.slice(i)) {
+            results.push({
+              type: "tool_result",
+              toolUseId: skipped.id,
+              content: "已取消（用户中止）",
+              isError: true,
+            });
+          }
+          emit({ type: "log", level: "warn", message: `已中止，跳过 ${toolUses.length - i} 个工具调用` });
+          break;
+        }
         const tool = opts.tools.get(call.name);
         const t0 = Date.now();
         emit({ type: "tool_started", runId, toolUseId: call.id, name: call.name, input: call.input });
@@ -385,7 +409,8 @@ export class AgentRunner {
     emit: (e: AgentEvent) => void,
   ): Promise<{ messages: ChatMessage[]; summary: string } | null> {
     if (messages.length < 6) return null;
-    const keepTail = 6;
+    // The boundary matters: slicing mid-exchange would orphan a tool_result.
+    const keepTail = compactionBoundary(messages, 6);
     const head = messages.slice(0, messages.length - keepTail);
     const tail = messages.slice(messages.length - keepTail);
 

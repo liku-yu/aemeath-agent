@@ -43,6 +43,74 @@ export interface SessionMeta {
   messageCount: number;
 }
 
+/**
+ * Make every `tool_use` block answered by a `tool_result`.
+ *
+ * Providers reject an assistant message whose tool_use has no matching
+ * tool_result — Anthropic fails the whole request, OpenAI does the same for
+ * `tool_calls`. A run interrupted mid-batch (user presses stop, the process
+ * dies) leaves exactly that shape in the journal, so every *later* turn in that
+ * session fails with an error that looks like a provider problem.
+ *
+ * The runner also fills in cancelled results when it stops; this repairs history
+ * already written by an older build or by a crash.
+ */
+export function healToolPairs(messages: ChatMessage[]): ChatMessage[] {
+  const out: ChatMessage[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i]!;
+    out.push(msg);
+    if (msg.role !== "assistant" || typeof msg.content === "string") continue;
+
+    const ids = msg.content.filter((b) => b.type === "tool_use").map((b) => b.id);
+    if (!ids.length) continue;
+
+    const next = messages[i + 1];
+    const answered = new Set<string>();
+    if (next && Array.isArray(next.content)) {
+      for (const b of next.content) if (b.type === "tool_result") answered.add(b.toolUseId);
+    }
+    const missing = ids.filter((id) => !answered.has(id));
+    if (!missing.length) continue;
+
+    const synthetic: ContentBlock[] = missing.map((toolUseId) => ({
+      type: "tool_result" as const,
+      toolUseId,
+      content: "（没有返回结果：上一轮被中断）",
+      isError: true,
+    }));
+    if (next && Array.isArray(next.content) && next.content.some((b) => b.type === "tool_result")) {
+      out.push({ ...next, content: [...next.content, ...synthetic] });
+      i++; // this message has been consumed
+    } else {
+      out.push({ role: "user", content: synthetic });
+    }
+  }
+  return out;
+}
+
+/**
+ * Where to cut when summarising old turns.
+ *
+ * The tail is kept verbatim, so the cut must not land inside a tool exchange: a
+ * tail that starts on a tool_result refers to a tool_use that was just folded
+ * into the summary, and both providers reject a tool_result with nothing to
+ * answer — Anthropic fails the whole request. Walking back one message at a time
+ * until the tail starts somewhere clean is cheaper than repairing it later.
+ *
+ * Returns how many trailing messages to keep (always >= keepMin, at least 1).
+ */
+export function compactionBoundary(messages: ChatMessage[], keepMin = 6): number {
+  let keep = Math.max(1, Math.min(keepMin, messages.length - 1));
+  while (keep < messages.length - 1) {
+    const first = messages[messages.length - keep]!;
+    const orphaned = Array.isArray(first.content) && first.content.some((b) => b.type === "tool_result");
+    if (!orphaned) break;
+    keep++;
+  }
+  return keep;
+}
+
 /** Bring an older session record up to the current shape. */
 function migrateSessionMeta(meta: SessionMeta): SessionMeta {
   let m = meta;

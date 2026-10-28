@@ -14,6 +14,47 @@ export function shellCommand(command: string): { file: string; args: string[] } 
   return { file: "/bin/sh", args: ["-c", command] };
 }
 
+/**
+ * Environment for a spawned command.
+ *
+ * The app reads provider credentials from the environment (`AEMEATH_API_KEY`,
+ * `DEEPSEEK_API_KEY`, …). Handing those to every shell command means a single
+ * `env` — or a prompt-injected `echo $DEEPSEEK_API_KEY` — lifts the user's key,
+ * which is exactly what the encrypted credential store exists to prevent. So the
+ * agent's shell does not inherit them.
+ *
+ * Deliberately narrow: only the variables this project itself treats as
+ * credentials, plus the whole `AEMEATH_*` namespace. `GITHUB_TOKEN` and friends
+ * stay, because `git push` run by the agent legitimately needs them.
+ */
+const SECRET_ENV = new Set(
+  [
+    "AEMEATH_API_KEY",
+    "AEMEATH_ANTHROPIC_API_KEY",
+    "DEEPSEEK_API_KEY",
+    "MOONSHOT_API_KEY",
+    "SILICONFLOW_API_KEY",
+    "OPENROUTER_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "DASHSCOPE_API_KEY",
+    "ZHIPU_API_KEY",
+    "OPENAI_API_KEY",
+  ].map((k) => k.toUpperCase()),
+);
+
+/** Copy `source` minus credentials; always sets the AEMEATH marker. */
+export function scrubbedEnv(source: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (value === undefined) continue;
+    const upper = key.toUpperCase();
+    if (SECRET_ENV.has(upper) || upper.startsWith("AEMEATH_")) continue;
+    out[key] = value;
+  }
+  out.AEMEATH = "1";
+  return out;
+}
+
 export interface ExecResult {
   code: number | null;
   stdout: string;
@@ -33,7 +74,7 @@ export function runCommand(
     const child = spawn(file, args, {
       cwd: opts.cwd,
       windowsHide: true,
-      env: { ...process.env, AEMEATH: "1" },
+      env: scrubbedEnv(),
     });
     let stdout = "";
     let stderr = "";

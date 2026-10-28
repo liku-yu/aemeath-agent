@@ -2,7 +2,28 @@
 
 /* ============================ Settings page =============================== */
 
-.modal.settings { width: 760px; }
+/*
+ * Fixed header, scrolling panel.
+ *
+ * The whole dialog used to scroll, so the moment a model list got long the tab
+ * bar scrolled out of view and switching tabs meant scrolling back up first.
+ * The tabs are the navigation; they should not move.
+ */
+.modal.settings {
+  width: 760px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.settings-head { flex: 0 0 auto; }
+.modal.settings > .modal-actions { flex: 0 0 auto; }
+.settings-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  /* Room for the scrollbar so the last row is not flush against the edge. */
+  padding-right: 4px;
+}
 .settings-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .settings-tabs { display: flex; gap: 2px; background: var(--glass-sheen), var(--glass-2); padding: 3px;
   border-radius: var(--r-md); border: 1px solid var(--glass-border); }

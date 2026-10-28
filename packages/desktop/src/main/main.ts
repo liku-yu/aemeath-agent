@@ -31,6 +31,7 @@ import {
   type AemeathConfig,
   type AgentEvent,
   type PermissionRequest,
+  type PermissionDecision,
   type McpClient,
   type BalanceInfo,
   maskSecret,
@@ -174,7 +175,7 @@ let balanceTimer: NodeJS.Timeout | null = null;
 const petPrefs = { enabled: true, x: -1, y: -1, scale: 1, alwaysOnTop: true };
 
 /** queue of pending permission prompts (resolved by renderer) */
-const pendingPermissions = new Map<string, (d: "allow_once" | "allow_always" | "deny") => void>();
+const pendingPermissions = new Map<string, (d: PermissionDecision) => void>();
 
 /**
  * Initialise the agent core exactly once, lazily. The window is created
@@ -299,11 +300,17 @@ async function refreshBalance(): Promise<BalanceInfo> {
 
   try {
     balance = await fetchBalance(cfg);
-    balanceIdentityCache = identity;
-    balanceFetchedAt = Date.now();
   } catch (err) {
     balance = { supported: true, message: err instanceof Error ? err.message : String(err), fetchedAt: Date.now() };
   }
+  /*
+   * Cache failures too. Without this, every caller retried immediately, and a
+   * provider that is down turned each settings action into another 8s timeout —
+   * the request storm the cache was added for, just on the error path. A new
+   * endpoint or key still misses the cache, so recovery is immediate.
+   */
+  balanceIdentityCache = identity;
+  balanceFetchedAt = Date.now();
   // Attach local usage so providers without a balance API still show something.
   const usage = usageTracker
     ? usageTracker.summary({ provider: cfg.provider || "custom", sinceMs: 30 * 24 * 60 * 60 * 1000 })
@@ -1188,13 +1195,32 @@ ipcMain.handle("agent:abort", async () => {
   return { ok: true };
 });
 
-ipcMain.handle("agent:permissionResult", async (_e, key: string, decision: "allow_once" | "allow_always" | "deny") => {
-  const resolve = pendingPermissions.get(key);
-  if (resolve) {
-    resolve(decision);
-    pendingPermissions.delete(key);
-  }
-  return { ok: true };
+/**
+ * Four-valued on purpose: "allow this class" arrives here too, and the type used
+ * to omit it.
+ */
+const PERMISSION_DECISIONS = new Set<PermissionDecision>([
+  "allow_once",
+  "allow_always",
+  "allow_class",
+  "deny",
+]);
+
+ipcMain.handle("agent:permissionResult", async (_e, key: unknown, decision: unknown) => {
+  const id = String(key ?? "");
+  const resolve = pendingPermissions.get(id);
+  if (!resolve) return { ok: false };
+  /*
+   * Fail closed. This is the one place where a malformed value — a stale button,
+   * a renderer bug, a hand-crafted IPC call — would otherwise be read as
+   * "not deny, therefore allow" and run the tool without approval.
+   */
+  const safe: PermissionDecision = PERMISSION_DECISIONS.has(decision as PermissionDecision)
+    ? (decision as PermissionDecision)
+    : "deny";
+  resolve(safe);
+  pendingPermissions.delete(id);
+  return { ok: true, decision: safe };
 });
 
 ipcMain.handle("agent:pickFolder", async () => {
@@ -1229,8 +1255,23 @@ ipcMain.handle("agent:checkpoints", async () => {
 
 ipcMain.handle("pet:getPrefs", async () => petPrefs);
 
-ipcMain.handle("pet:setPrefs", async (_e, patch: Partial<typeof petPrefs>) => {
-  Object.assign(petPrefs, patch);
+/** The only keys the renderer may write; see sanitizeConfigPatch for the same idea. */
+const PET_PREF_KEYS = ["enabled", "x", "y", "scale", "alwaysOnTop"] as const;
+
+ipcMain.handle("pet:setPrefs", async (_e, patch: unknown) => {
+  if (patch && typeof patch === "object") {
+    for (const key of PET_PREF_KEYS) {
+      // Object.hasOwn, not `in`: a key inherited from the prototype chain (or a
+      // literal "__proto__" from a crafted payload) must not be copied over.
+      if (!Object.hasOwn(patch, key)) continue;
+      const value = (patch as Record<string, unknown>)[key];
+      if (key === "x" || key === "y" || key === "scale") {
+        if (typeof value === "number" && Number.isFinite(value)) petPrefs[key] = value;
+      } else if (typeof value === "boolean") {
+        petPrefs[key] = value;
+      }
+    }
+  }
   savePetPrefs();
   return petPrefs;
 });
@@ -1258,7 +1299,7 @@ ipcMain.handle("agent:send", async (_e, prompt: unknown) => {
   currentAbort = abort;
 
   const askPermission = (req: PermissionRequest) =>
-    new Promise<"allow_once" | "allow_always" | "deny">((resolve) => {
+    new Promise<PermissionDecision>((resolve) => {
       pendingPermissions.set(req.key, resolve);
       // Fallback: if renderer never answers (window closed), deny after 5 min.
       setTimeout(() => {

@@ -1048,6 +1048,12 @@ $("btn-undo").addEventListener("click", async () => {
   }
 });
 $("btn-new").addEventListener("click", async () => {
+  if (streaming) {
+    // Swapping the session under a running turn would leave the run's events
+    // painting into a conversation they do not belong to.
+    addNotice("任务还在跑，先停下来或等它结束再开新会话。");
+    return;
+  }
   await window.aemeath.newSession();
   messagesEl.innerHTML = "";
   renderWelcome();
@@ -1145,6 +1151,10 @@ async function refreshSessions() {
     el.appendChild(del);
 
     el.addEventListener("click", async () => {
+      if (streaming) {
+        addNotice("任务还在跑，先停下来或等它结束再切换会话。");
+        return;
+      }
       try {
         const history = await window.aemeath.resumeSession(s.id);
         messagesEl.innerHTML = "";
